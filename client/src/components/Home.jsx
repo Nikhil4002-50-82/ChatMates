@@ -95,9 +95,9 @@ const Home = () => {
         {/* Sidebar */}
         <div
           ref={sidebarRef}
-          className={`bg-white border-r border-[#e0e0e0] fixed sm:static top-0 left-0 h-full sm:h-auto transition-transform duration-300 ease-in-out ${
+          className={`bg-white border-r border-[#e0e0e0] fixed sm:static top-0 left-0 h-full sm:h-auto transition-transform duration-300 ease-in-out z-50 ${
             isSidebarOpen
-              ? "translate-x-0 z-40"
+              ? "translate-x-0"
               : "-translate-x-full sm:translate-x-0"
           }`}
           style={{
