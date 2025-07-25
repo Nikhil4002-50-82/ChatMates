@@ -13,9 +13,12 @@ const Header = () => {
         </span>
         <h1 className="text-white font-semibold text-2xl sm:text-3xl md:text-4xl lg:text-5xl ml-1 sm:ml-2 md:ml-3 lg:ml-4">My-Chat</h1>
       </div>
-      {loggedIn?<button className="text-blue-600 bg-white text-xl sm:text-2xl md:text-3xl px-3 sm:px-4 md:px-5 py-1 rounded-lg font-semibold hover:text-white hover:bg-red-600 transition-colors duration-200">
+      <button className="text-blue-600 bg-white text-xl sm:text-2xl md:text-3xl px-3 sm:px-4 md:px-5 py-1 rounded-lg font-semibold hover:text-white hover:bg-red-600 transition-colors duration-200" onClick={(e)=>{
+        e.preventDefault();
+        setLoggedIn(false);
+      }}>
         Logout
-      </button>:null}
+      </button>
     </div>
   );
 };

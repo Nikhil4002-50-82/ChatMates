@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import ChatMessage from "./ChatMessage";
 import UserList from "./UserList";
+import Header from ".//Header";
 
 import { FaUserTie } from "react-icons/fa";
 import { IoCall } from "react-icons/io5";
@@ -92,6 +93,7 @@ const Home = () => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
+      <Header />
       <div className="w-full h-[calc(100vh-80px)] flex flex-col sm:flex-row">
         {/* Sidebar */}
         <div

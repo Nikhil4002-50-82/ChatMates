@@ -100,6 +100,7 @@ app.post("/login", async (req, res) => {
     res.status(200).send({
       message: "Logged in successfully",
       accessToken: accessToken,
+      refreshToken:refreshToken
     });
   } catch (err) {
     console.error("Login error:", err.message);
