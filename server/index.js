@@ -18,6 +18,10 @@ app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
 app.use(morgan("combined"));
 
+app.get("/cron-health", (req, res) => {
+  res.send("OK");
+});
+
 app.post("/registerUser", async (req, res) => {
   try {
     const { email, password, name, phoneno } = req.body;

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login / Signup</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f0f2f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      width: 350px;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .toggle-buttons {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+
+    .toggle-buttons button {
+      background: none;
+      border: none;
+      font-size: 18px;
+      padding: 10px;
+      cursor: pointer;
+      color: #555;
+      border-bottom: 2px solid transparent;
+    }
+
+    .toggle-buttons button.active {
+      color: #007bff;
+      border-bottom: 2px solid #007bff;
+    }
+
+    .form {
+      display: none;
+      flex-direction: column;
+    }
+
+    .form.active {
+      display: flex;
+    }
+
+    input {
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .btn {
+      padding: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    .btn:hover {
+      background: #0056b3;
+    }
+
+    .footer-text {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #888;
+    }
+
+    @media (max-width: 400px) {
+      .container {
+        width: 90%;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="toggle-buttons">
+      <button id="loginBtn" class="active">Login</button>
+      <button id="signupBtn">Sign Up</button>
+    </div>
+
+    <form id="loginForm" class="form active">
+      <input type="email" placeholder="Email" required />
+      <input type="password" placeholder="Password" required />
+      <button class="btn" type="submit">Login</button>
+    </form>
+
+    <form id="signupForm" class="form">
+      <input type="text" placeholder="Full Name" required />
+      <input type="email" placeholder="Email" required />
+      <input type="password" placeholder="Password" required />
+      <button class="btn" type="submit">Sign Up</button>
+    </form>
+
+    <div class="footer-text">Welcome to ChatVerse 💬</div>
+  </div>
+
+  <script>
+    const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
+    const loginForm = document.getElementById("loginForm");
+    const signupForm = document.getElementById("signupForm");
+
+    loginBtn.onclick = () => {
+      loginBtn.classList.add("active");
+      signupBtn.classList.remove("active");
+      loginForm.classList.add("active");
+      signupForm.classList.remove("active");
+    };
+
+    signupBtn.onclick = () => {
+      signupBtn.classList.add("active");
+      loginBtn.classList.remove("active");
+      signupForm.classList.add("active");
+      loginForm.classList.remove("active");
+    };
+  </script>
+</body>
+</html>

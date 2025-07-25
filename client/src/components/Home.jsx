@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
-import Header from "./Header";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import ChatMessage from "./ChatMessage";
 import UserList from "./UserList";
 
@@ -8,9 +7,13 @@ import { IoCall } from "react-icons/io5";
 import { BsMicFill } from "react-icons/bs";
 import { IoIosSend } from "react-icons/io";
 import { RiMenuSearchFill } from "react-icons/ri";
-import { GiLouvrePyramid } from "react-icons/gi";
+
+import { LoggedInContext } from "../context/LoginContext";
+import Auth from "./Auth";
 
 const Home = () => {
+  const { loggedIn, setLoggedIn } = useContext(LoggedInContext);
+
   const [isRecording, setIsRecording] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(300);
@@ -79,18 +82,16 @@ const Home = () => {
         setIsSidebarOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
   }, [isSidebarOpen]);
 
-  return (
+  return loggedIn ? (
     <div
-      className="bg-[#f0f2f5] min-h-screen"
+      className="bg-[#f0f2f5] "
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      <Header />
       <div className="w-full h-[calc(100vh-80px)] flex flex-col sm:flex-row">
         {/* Sidebar */}
         <div
@@ -138,13 +139,11 @@ const Home = () => {
             </div>
           </div>
         </div>
-
         {/* Resize Handle */}
         <div
           className="hidden sm:block w-1 bg-[#e0e0e0] cursor-col-resize hover:bg-blue-600 transition-colors"
           onMouseDown={handleMouseDown}
         ></div>
-
         {/* Chat Area */}
         <div className="flex flex-col flex-1">
           <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between">
@@ -163,65 +162,6 @@ const Home = () => {
               <IoCall className="text-2xl sm:text-3xl cursor-pointer" />
             </div>
           </div>
-          {/* <div className="flex-1 p-3 sm:p-5 overflow-y-auto scrollbar-hide bg-[#f0f2f5]">
-            <ChatMessage
-              message="Hey, how's it going?"
-              isSender={false}
-              time="10:30 AM"
-            />
-            <ChatMessage
-              message=""
-              isSender={true}
-              time="10:31 AM"
-              isAudio={true}
-            />
-            <ChatMessage
-              message="Pretty good, thanks! How about you?"
-              isSender={true}
-              time="10:32 AM"
-            />
-            <ChatMessage
-              message=""
-              isSender={false}
-              time="10:33 AM"
-              isAudio={true}
-            />
-            <ChatMessage
-              message="Doing great! Want to grab coffee later?"
-              isSender={false}
-              time="10:35 AM"
-            />
-            <ChatMessage
-              message="Lorem ipsum dolor sit, amet consectetur adipisicing elit. Impedit tenetur quidem quos iure consectetur sunt molestiae quam illo, voluptatum, cum in beatae quae. Ipsam cum magni quibusdam aperiam enim sapiente?"
-              isSender={true}
-              time="10:50 AM"
-            />
-            <ChatMessage
-              message="Lorem ipsum dolor sit, amet consectetur adipisicing elit. Impedit tenetur quidem quos iure consectetur sunt molestiae quam illo, voluptatum, cum in beatae quae. Ipsam cum magni quibusdam aperiam enim sapiente?"
-              isSender={true}
-              time="11:50 AM"
-            />
-          </div>
-          <div className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center">
-            <input
-              type="text"
-              className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-sm sm:text-base rounded-2xl"
-              placeholder="Type a message..."
-            />
-            <button
-              className={
-                isRecording
-                  ? "text-red-600 text-lg sm:text-xl ml-2 animate-pulse"
-                  : "text-lg sm:text-xl ml-2"
-              }
-              onClick={toggleRecording}
-            >
-              <BsMicFill />
-            </button>
-            <button className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 hover:bg-[#0066cc] flex items-center justify-center">
-              <IoIosSend className="text-xl sm:text-2xl" />
-            </button>
-          </div> */}
           {/* Chat Content Area */}
           <div className="flex h-[84vh] md:h-[77vh] flex-col bg-[#f0f2f5]">
             {/* Scrollable Messages */}
@@ -284,7 +224,6 @@ const Home = () => {
                 time="11:51 AM"
               />
             </div>
-
             {/* Fixed Input Bar */}
             <div className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center bottom-0">
               <input
@@ -310,6 +249,8 @@ const Home = () => {
         </div>
       </div>
     </div>
+  ) : (
+    <Auth />
   );
 };
 
