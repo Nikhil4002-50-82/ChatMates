@@ -5,6 +5,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 import supabase from "./utils/supabase.js";
 
 dotenv.config();
@@ -12,6 +13,7 @@ const app = express();
 const port = 3000;
 
 app.use(cors());
+app.use(cookieParser());
 app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
 app.use(morgan("combined"));
@@ -68,25 +70,78 @@ app.post("/login", async (req, res) => {
       return res.status(500).send({ message: "User data not found" });
     }
     const profile = userData[0];
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       {
         userid: user.userid,
         email: user.email,
         name: profile.name,
         phoneno: profile.phoneno,
       },
-      process.env.JWT_TOKEN,
-      { expiresIn: "2h" }
+      process.env.JWT_ACCESS_TOKEN,
+      { expiresIn: "15m" }
     );
+    const refreshToken = jwt.sign(
+      {
+        userid: user.userid,
+      },
+      process.env.JWT_REFRESH_TOKEN,
+      { expiresIn: "3d" }
+    );
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
     res.status(200).send({
       message: "Logged in successfully",
-      token: token,
+      accessToken: accessToken,
     });
   } catch (err) {
     console.error("Login error:", err.message);
     res.status(500).send({ message: "Server error" });
   }
 });
+app.post("/refreshToken", async (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (!token)
+    return res.status(401).json({ message: "No refresh token found" });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_TOKEN);
+    const { userid } = decoded;
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("userid", userid);
+    if (error || !data || data.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const user = data[0];
+    const newAccessToken = jwt.sign(
+      {
+        userid: userid,
+        email: user.email,
+        name: user.name,
+        phoneno: user.phoneno,
+      },
+      process.env.JWT_ACCESS_TOKEN,
+      { expiresIn: "15m" }
+    );
+    return res.json({ accessToken: newAccessToken });
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid refresh token" });
+  }
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+});
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}.`);
