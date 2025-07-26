@@ -22,7 +22,7 @@ const Auth = () => {
     if (isLogin) {
       try {
         const response = await axios.post(
-          "http://localhost:3000/login",
+          "https://my-chat-b2i2.onrender.com/login",
           { email, password },
           { withCredentials: true }
         );
@@ -43,7 +43,7 @@ const Auth = () => {
     } else {
       try {
         const response = await axios.post(
-          "http://localhost:3000/registerUser",
+          "https://my-chat-b2i2.onrender.com/registerUser",
           { email, password, name, phoneno: phoneNo },
           { withCredentials: true }
         );

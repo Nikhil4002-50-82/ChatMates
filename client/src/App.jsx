@@ -15,7 +15,7 @@ const App = () => {
     const checkSession = async () => {
       try {
         console.log("Checking cookies before profile request:", document.cookie);
-        const response = await axios.get("http://localhost:3000/profile", {
+        const response = await axios.get("https://my-chat-b2i2.onrender.com/profile", {
           withCredentials: true,
         });
         console.log("Profile response:", response.data);
@@ -30,12 +30,12 @@ const App = () => {
           try {
             console.log("Attempting to refresh token...");
             const refreshResponse = await axios.get(
-              "http://localhost:3000/refreshToken",
+              "https://my-chat-b2i2.onrender.com/refreshToken",
               { withCredentials: true }
             );
             console.log("Refresh response:", refreshResponse.data);
             const retryResponse = await axios.get(
-              "http://localhost:3000/profile",
+              "https://my-chat-b2i2.onrender.com/profile",
               { withCredentials: true }
             );
             console.log("Retry profile response:", retryResponse.data);

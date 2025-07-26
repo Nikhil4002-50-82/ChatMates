@@ -14,7 +14,7 @@ const Header = () => {
   const logout = async () => {
     setLoading(true);
     try {
-      await axios.post("http://localhost:3000/logout", {}, { withCredentials: true });
+      await axios.post("https://my-chat-b2i2.onrender.com/logout", {}, { withCredentials: true });
       setLoggedIn(false);
       setUserData(null);
       alert("Logged out successfully.")
