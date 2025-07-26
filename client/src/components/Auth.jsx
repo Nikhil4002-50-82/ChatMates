@@ -1,19 +1,16 @@
 import React, { useContext, useState } from "react";
 import axios from "axios";
-
 import { GiChatBubble } from "react-icons/gi";
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
 import { useNavigate } from "react-router-dom";
 
 const Auth = () => {
   const navigate = useNavigate();
-
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phoneNo, setPhoneNo] = useState("");
-
   const { setLoggedIn } = useContext(LoggedInContext);
   const { userData, setUserData } = useContext(userDataContext);
 
@@ -22,11 +19,9 @@ const Auth = () => {
     if (isLogin) {
       try {
         const response = await axios.post(
-          "https://my-chat-b2i2.onrender.com/login",
-          {
-            email,
-            password,
-          }
+          "http://localhost:3000/login",
+          { email, password },
+          { withCredentials: true } // Add this
         );
         console.log("Login successful:", response.data);
         alert(response?.data?.message);
@@ -42,13 +37,9 @@ const Auth = () => {
     } else {
       try {
         const response = await axios.post(
-          "https://my-chat-b2i2.onrender.com/registerUser",
-          {
-            email,
-            password,
-            name,
-            phoneno: phoneNo,
-          }
+          "http://localhost:3000/registerUser",
+          { email, password, name, phoneno: phoneNo },
+          { withCredentials: true } // Add this for consistency
         );
         console.log(
           "Signup successful:",
@@ -61,13 +52,13 @@ const Auth = () => {
           "Signup failed:",
           error.response?.data?.message || error.message
         );
-        alert(error.response?.data?.message || "Signup failed.");
+        alert(error.response?.data?.message || error.message);
       }
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 p-4 sm:p-6">
+    <div className="flex items-center justify-center min-h-screen bg-blue-600 p-4 sm:p-6">
       <div className="bg-white w-full max-w-lg p-6 sm:p-8 rounded-2xl shadow-xl transition-all duration-300 transform hover:scale-[1.02] sm:hover:shadow-2xl">
         <div className="flex justify-center mb-8 bg-gray-100 rounded-full p-1">
           <button
@@ -135,7 +126,6 @@ const Auth = () => {
             {isLogin ? "Login" : "Sign Up"}
           </button>
         </form>
-
         <div className="text-center text-lg text-gray-500 mt-6 flex items-center justify-center">
           <p className="mr-2">Welcome to </p>
           <span className="font-semibold text-blue-600">My-Chat</span>

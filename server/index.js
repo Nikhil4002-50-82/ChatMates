@@ -9,10 +9,28 @@ import cookieParser from "cookie-parser";
 import supabase from "./utils/supabase.js";
 
 dotenv.config();
+
+function authenticateAccessToken(req, res, next) {
+  const token = req.cookies.accessToken;
+  if (!token) return res.status(401).json({ message: "Access token missing" });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
+    req.user = decoded; // attach user info to request
+    next(); // continue to the actual route handler
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired access token" });
+  }
+}
+
 const app = express();
 const port = 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? 'https://my-chat-eta-seven.vercel.app/'
+    : 'http://localhost:5173',
+  credentials: true
+}));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
@@ -87,10 +105,17 @@ app.post("/login", async (req, res) => {
     const refreshToken = jwt.sign(
       {
         userid: user.userid,
+        email: user.email,
       },
       process.env.JWT_REFRESH_TOKEN,
-      { expiresIn: "3d" }
+      { expiresIn: "7d" }
     );
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -100,20 +125,21 @@ app.post("/login", async (req, res) => {
     res.status(200).send({
       message: "Logged in successfully",
       accessToken: accessToken,
-      refreshToken:refreshToken
+      refreshToken: refreshToken,
     });
   } catch (err) {
     console.error("Login error:", err.message);
     res.status(500).send({ message: "Server error" });
   }
 });
-app.post("/refreshToken", async (req, res) => {
+
+app.get("/refreshToken", async (req, res) => {
   const token = req.cookies.refreshToken;
   if (!token)
     return res.status(401).json({ message: "No refresh token found" });
   try {
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_TOKEN);
-    const { userid } = decoded;
+    const { userid,email } = decoded;
     const { data, error } = await supabase
       .from("users")
       .select("*")
@@ -125,20 +151,32 @@ app.post("/refreshToken", async (req, res) => {
     const newAccessToken = jwt.sign(
       {
         userid: userid,
-        email: user.email,
+        email: email,
         name: user.name,
         phoneno: user.phoneno,
       },
       process.env.JWT_ACCESS_TOKEN,
       { expiresIn: "15m" }
     );
-    return res.json({ accessToken: newAccessToken });
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    return res.status(200).json({ message: "Access token refreshed" });
   } catch (err) {
     return res.status(403).json({ message: "Invalid refresh token" });
   }
 });
 
 app.post("/logout", (req, res) => {
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -147,6 +185,27 @@ app.post("/logout", (req, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 });
 
+app.get("/profile", authenticateAccessToken, async (req, res) => {
+  try {
+    // Optionally fetch fresh user data from DB if needed
+    const { userid } = req.user;
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("userid", userid);
+    if (error || !data || data.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const user = data[0];
+    res.status(200).json({
+      email: req.user.email,
+      name: user.name,
+      phoneno: user.phoneno,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to retrieve profile" });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}.`);
