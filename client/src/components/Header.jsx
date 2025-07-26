@@ -1,27 +1,37 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GiChatBubble } from "react-icons/gi";
-import { LoggedInContext, userDataContext } from "../context/LoginContext.jsx";
+import { LoggedInContext, userDataContext } from "../context/LoginContext";
 import axios from "axios";
+import Loader from "./Loader";
 
 const Header = () => {
   const { loggedIn, setLoggedIn } = useContext(LoggedInContext);
   const { setUserData } = useContext(userDataContext);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const logout = async () => {
+    setLoading(true);
     try {
       await axios.post("http://localhost:3000/logout", {}, { withCredentials: true });
       setLoggedIn(false);
       setUserData(null);
+      alert("Logged out successfully.")
       navigate("/auth");
     } catch (error) {
       console.error("Logout failed:", error.message);
       setLoggedIn(false);
       setUserData(null);
       navigate("/auth");
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="w-full flex items-center justify-between px-2 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4 bg-blue-600">
@@ -39,6 +49,7 @@ const Header = () => {
           e.preventDefault();
           logout();
         }}
+        disabled={loading}
       >
         Logout
       </button>

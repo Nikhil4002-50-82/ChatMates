@@ -3,6 +3,7 @@ import axios from "axios";
 import { GiChatBubble } from "react-icons/gi";
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
 import { useNavigate } from "react-router-dom";
+import Loader from "./Loader";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -11,21 +12,24 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phoneNo, setPhoneNo] = useState("");
+  const [loading, setLoading] = useState(false);
   const { setLoggedIn } = useContext(LoggedInContext);
   const { userData, setUserData } = useContext(userDataContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     if (isLogin) {
       try {
         const response = await axios.post(
           "http://localhost:3000/login",
           { email, password },
-          { withCredentials: true } // Add this
+          { withCredentials: true }
         );
         console.log("Login successful:", response.data);
         alert(response?.data?.message);
         setLoggedIn(true);
+        setUserData(response.data.user || { email }); // Optional: Store user data
         navigate("/");
       } catch (error) {
         console.error(
@@ -33,13 +37,15 @@ const Auth = () => {
           error.response?.data?.message || error.message
         );
         alert(error.response?.data?.message || "Login failed.");
+      } finally {
+        setLoading(false);
       }
     } else {
       try {
         const response = await axios.post(
           "http://localhost:3000/registerUser",
           { email, password, name, phoneno: phoneNo },
-          { withCredentials: true } // Add this for consistency
+          { withCredentials: true }
         );
         console.log(
           "Signup successful:",
@@ -52,10 +58,16 @@ const Auth = () => {
           "Signup failed:",
           error.response?.data?.message || error.message
         );
-        alert(error.response?.data?.message || error.message);
+        alert(error.response?.data?.message || "Signup failed.");
+      } finally {
+        setLoading(false);
       }
     }
   };
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-blue-600 p-4 sm:p-6">
@@ -122,6 +134,7 @@ const Auth = () => {
           <button
             type="submit"
             className="bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-semibold text-xl sm:text-2xl"
+            disabled={loading}
           >
             {isLogin ? "Login" : "Sign Up"}
           </button>
