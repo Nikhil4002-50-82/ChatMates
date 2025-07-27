@@ -65,7 +65,7 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === "production"
-        ? "https://my-chat-eta-seven.vercel.app/"
+        ? "https://my-chat-eta-seven.vercel.app"
         : "http://localhost:5173",
     credentials: true,
   })
