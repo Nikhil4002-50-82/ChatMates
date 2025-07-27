@@ -14,12 +14,16 @@ dotenv.config();
 
 function authenticateAccessToken(req, res, next) {
   const token = req.cookies.accessToken;
-  if (!token) return res.status(401).json({ message: "Access token missing" });
+  if (!token) {
+    console.warn("Missing access token on request to", req.originalUrl);
+    return res.status(401).json({ message: "Access token missing" });
+  }
   try {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
     req.user = decoded;
     next();
   } catch (err) {
+    console.warn("Invalid token:", err.message);
     return res.status(403).json({ message: "Invalid or expired access token" });
   }
 }
@@ -247,7 +251,7 @@ app.get("/profile", authenticateAccessToken, async (req, res) => {
   }
 });
 
-app.get("/chattedUsers/:userid", async (req, res) => {
+app.get("/chattedUsers/:userid",authenticateAccessToken, async (req, res) => {
   const { userid } = req.params;
   // Step 1: Get all chat IDs the user is a member of
   const { data: chatMemberships, error } = await supabase
@@ -276,7 +280,7 @@ app.get("/chattedUsers/:userid", async (req, res) => {
   res.json(uniqueUsers);
 });
 
-app.get("/searchUsers", async (req, res) => {
+app.get("/searchUsers",authenticateAccessToken, async (req, res) => {
   const { q, userid } = req.query;
   const { data, error } = await supabase
     .from("users")
@@ -288,7 +292,7 @@ app.get("/searchUsers", async (req, res) => {
   res.json(data);
 });
 
-app.post("/startChat", async (req, res) => {
+app.post("/startChat",authenticateAccessToken, async (req, res) => {
   const { user1, user2 } = req.body;
   try {
     // Get chatids where user1 is a member
@@ -340,7 +344,7 @@ app.post("/startChat", async (req, res) => {
   }
 });
 
-app.get("/getUser/:id", async (req, res) => {
+app.get("/getUser/:id",authenticateAccessToken, async (req, res) => {
   const { id } = req.params;
   const { data, error } = await supabase
     .from("users")
@@ -354,7 +358,7 @@ app.get("/getUser/:id", async (req, res) => {
   res.json(data);
 });
 
-app.get("/messages/:chatid", async (req, res) => {
+app.get("/messages/:chatid",authenticateAccessToken, async (req, res) => {
   const { chatid } = req.params;
   try {
     const { data, error } = await supabase
@@ -380,7 +384,7 @@ app.get("/messages/:chatid", async (req, res) => {
   }
 });
 
-app.post("/messages", async (req, res) => {
+app.post("/messages",authenticateAccessToken, async (req, res) => {
   const { chatid, senderid, message } = req.body;
   if (!chatid || !senderid || !message) {
     return res.status(400).json({ error: "Missing required fields" });

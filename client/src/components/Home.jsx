@@ -63,7 +63,9 @@ const Home = () => {
     setSelectedUser(user);
     setActiveChatId(user.chatid);
     try {
-      const res = await axios.get(`${API_BASE_URL}/messages/${user.chatid}`);
+      const res = await axios.get(`${API_BASE_URL}/messages/${user.chatid}`, {
+        withCredentials: true,
+      });
       setMessages(res.data);
     } catch (err) {
       console.error("Failed to load messages:", err);
@@ -92,7 +94,10 @@ const Home = () => {
     }
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/searchUsers?q=${value}&userid=${userData.userid}`
+        `${API_BASE_URL}/searchUsers?q=${value}&userid=${userData.userid}`,
+        {
+          withCredentials: true,
+        }
       );
       const allResults = response.data;
       const existingIds = new Set(chatUsers.map((u) => u.userid));
@@ -107,17 +112,25 @@ const Home = () => {
 
   const handleStartChat = async (otherUserId) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/startChat`, {
-        user1: userData.userid,
-        user2: otherUserId,
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/startChat`,
+        {
+          user1: userData.userid,
+          user2: otherUserId,
+        },
+        {
+          withCredentials: true,
+        }
+      );
       const { chatid } = response.data;
       // Check if user already exists in UI
       const alreadyPresent = chatUsers.some((u) => u.userid === otherUserId);
       let userToSelect;
       if (!alreadyPresent) {
         // Get user details from backend
-        const res = await axios.get(`${API_BASE_URL}/getUser/${otherUserId}`);
+        const res = await axios.get(`${API_BASE_URL}/getUser/${otherUserId}`, {
+          withCredentials: true,
+        });
         const newUser = { ...res.data, chatid };
         setChatUsers((prev) => [...prev, newUser]);
         userToSelect = newUser;
@@ -178,7 +191,10 @@ const Home = () => {
     const fetchChatUsers = async () => {
       try {
         const response = await axios.get(
-          `${API_BASE_URL}/chattedUsers/${userData.userid}`
+          `${API_BASE_URL}/chattedUsers/${userData.userid}`,
+          {
+            withCredentials: true,
+          }
         );
         const data = response.data;
         setChatUsers(data);
