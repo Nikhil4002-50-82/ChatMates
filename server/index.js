@@ -35,7 +35,7 @@ const io = new Server(server, {
   cors: {
     origin:
       process.env.NODE_ENV === "production"
-        ? "https://my-chat-eta-seven.vercel.app"
+        ? "https://my-chat-wine-eta.vercel.app/"
         : "http://localhost:5173",
     credentials: true,
   },
@@ -69,7 +69,7 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === "production"
-        ? "https://my-chat-eta-seven.vercel.app"
+        ? "https://my-chat-wine-eta.vercel.app/"
         : "http://localhost:5173",
     credentials: true,
   })
