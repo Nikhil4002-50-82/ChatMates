@@ -14,7 +14,7 @@ const Auth = () => {
   const [phoneNo, setPhoneNo] = useState("");
   const [loading, setLoading] = useState(false);
   const { setLoggedIn } = useContext(LoggedInContext);
-  const { userData, setUserData } = useContext(userDataContext);
+  const { setUserData } = useContext(userDataContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,28 +22,42 @@ const Auth = () => {
     if (isLogin) {
       try {
         const response = await axios.post(
-          "https://my-chat-b2i2.onrender.com/login",
+          "http://localhost:3000/login",
           { email, password },
           { withCredentials: true }
         );
         console.log("Login successful:", response.data);
         alert(response?.data?.message);
-        setLoggedIn(true);
-        setUserData(response.data.user || { email }); // Optional: Store user data
-        navigate("/");
+
+        // Fetch user profile to ensure userData is populated
+        const profileResponse = await axios.get(
+          "http://localhost:3000/profile",
+          {
+            withCredentials: true,
+          }
+        );
+        if (profileResponse.data && profileResponse.data.name) {
+          setLoggedIn(true);
+          setUserData(profileResponse.data);
+          navigate("/");
+        } else {
+          throw new Error("Invalid user data");
+        }
       } catch (error) {
         console.error(
           "Login failed:",
           error.response?.data?.message || error.message
         );
         alert(error.response?.data?.message || "Login failed.");
+        setLoggedIn(false);
+        setUserData(null);
       } finally {
         setLoading(false);
       }
     } else {
       try {
         const response = await axios.post(
-          "https://my-chat-b2i2.onrender.com/registerUser",
+          "http://localhost:3000/registerUser",
           { email, password, name, phoneno: phoneNo },
           { withCredentials: true }
         );

@@ -6,6 +6,8 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
+import { createServer } from "node:http";
+import { Server } from "socket.io";
 import supabase from "./utils/supabase.js";
 
 dotenv.config();
@@ -15,8 +17,8 @@ function authenticateAccessToken(req, res, next) {
   if (!token) return res.status(401).json({ message: "Access token missing" });
   try {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
-    req.user = decoded; // attach user info to request
-    next(); // continue to the actual route handler
+    req.user = decoded;
+    next();
   } catch (err) {
     return res.status(403).json({ message: "Invalid or expired access token" });
   }
@@ -24,13 +26,48 @@ function authenticateAccessToken(req, res, next) {
 
 const app = express();
 const port = 3000;
+const server = createServer(app);
+// const io = new Server(server, {
+//   cors: {
+//     origin:
+//       process.env.NODE_ENV === "production"
+//         ? "https://my-chat-eta-seven.vercel.app/"
+//         : "http://localhost:5173",
+//     credentials: true,
+//   },
+// });
 
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? 'https://my-chat-eta-seven.vercel.app/'
-    : 'http://localhost:5173',
-  credentials: true
-}));
+// io.on("connection", (socket) => {
+//   console.log("✅ User connected:", socket.id);
+//   socket.on("send_message", async (messageData) => {
+//     const { senderid, chatid, message } = messageData;
+//     // Store in Supabase
+//     const { data, error } = await supabase
+//       .from("messages")
+//       .insert([{ chatid, senderid, message }]);
+//     if (!error) {
+//       io.emit("receive_message", {
+//         ...data[0],
+//         created_at: new Date().toISOString(),
+//       });
+//     } else {
+//       console.error("❌ Supabase insert error:", error);
+//     }
+//   });
+//   socket.on("disconnect", () => {
+//     console.log("❌ User disconnected:", socket.id);
+//   });
+// });
+
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === "production"
+        ? "https://my-chat-eta-seven.vercel.app/"
+        : "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(bodyParser.urlencoded());
 app.use(bodyParser.json());
@@ -139,7 +176,7 @@ app.get("/refreshToken", async (req, res) => {
     return res.status(401).json({ message: "No refresh token found" });
   try {
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_TOKEN);
-    const { userid,email } = decoded;
+    const { userid, email } = decoded;
     const { data, error } = await supabase
       .from("users")
       .select("*")
@@ -201,12 +238,174 @@ app.get("/profile", authenticateAccessToken, async (req, res) => {
       email: req.user.email,
       name: user.name,
       phoneno: user.phoneno,
+      userid: userid,
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to retrieve profile" });
   }
 });
 
-app.listen(port, () => {
+app.get("/chattedUsers/:userid", async (req, res) => {
+  const { userid } = req.params;
+  // Step 1: Get all chat IDs the user is a member of
+  const { data: chatMemberships, error } = await supabase
+    .from("chatmembers")
+    .select("chatid")
+    .eq("userid", userid);
+  if (error) return res.status(500).json({ error: error.message });
+  const chatIds = chatMemberships.map((i) => i.chatid);
+  if (chatIds.length === 0) return res.json([]);
+  // Step 2: Get other users in those chats (excluding self)
+  const { data: users, error: userError } = await supabase
+    .from("chatmembers")
+    .select("chatid, userid, users(name)")
+    .in("chatid", chatIds)
+    .neq("userid", userid);
+  if (userError) return res.status(500).json({ error: userError.message });
+  // Step 3: Remove duplicates
+  const uniqueUsers = Array.from(
+    new Map(
+      users.map((i) => [
+        i.userid,
+        { userid: i.userid, name: i.users.name, chatid: i.chatid },
+      ])
+    ).values()
+  );
+  res.json(uniqueUsers);
+});
+
+app.get("/searchUsers", async (req, res) => {
+  const { q, userid } = req.query;
+  const { data, error } = await supabase
+    .from("users")
+    .select("userid, name")
+    .ilike("name", `%${q}%`)
+    .neq("userid", userid) // don't return self
+    .limit(10);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+app.post("/startChat", async (req, res) => {
+  const { user1, user2 } = req.body;
+  try {
+    // Get chatids where user1 is a member
+    const { data: user1Memberships, error: user1Error } = await supabase
+      .from("chatmembers")
+      .select("chatid")
+      .eq("userid", user1);
+    if (user1Error) throw user1Error;
+    const user1ChatIds = (user1Memberships || []).map((m) => m.chatid);
+    // Get chatids where user2 is a member
+    const { data: user2Memberships, error: user2Error } = await supabase
+      .from("chatmembers")
+      .select("chatid")
+      .eq("userid", user2);
+    if (user2Error) throw user2Error;
+    const user2ChatIds = (user2Memberships || []).map((m) => m.chatid);
+    // Find common chat
+    const commonChatId = user1ChatIds.find((id) => user2ChatIds.includes(id));
+    if (commonChatId) {
+      return res.json({ chatid: commonChatId });
+    }
+    // No existing chat found — create new chat
+    const { data: newChat, error: chatInsertError } = await supabase
+      .from("chats")
+      .insert([{ isgroup: false, created_by: user1 }])
+      .select()
+      .single();
+    if (chatInsertError) throw chatInsertError;
+    const chatid = newChat.chatid;
+    // Add both users to chatmembers
+    const { error: memberInsertError } = await supabase
+      .from("chatmembers")
+      .insert([
+        { chatid, userid: user1 },
+        { chatid, userid: user2 },
+      ]);
+    if (memberInsertError) throw memberInsertError;
+    // Optional: get the other user's name
+    const { data: otherUser, error: userFetchError } = await supabase
+      .from("users")
+      .select("name")
+      .eq("userid", user2)
+      .single();
+    if (userFetchError) throw userFetchError;
+    return res.json({ chatid, otherUser });
+  } catch (err) {
+    console.error("Error in /startChat:", err.message || err);
+    res.status(500).json({ error: "Something went wrong while starting chat" });
+  }
+});
+
+app.get("/getUser/:id", async (req, res) => {
+  const { id } = req.params;
+  const { data, error } = await supabase
+    .from("users")
+    .select("userid, name, email") // Add any other fields you need
+    .eq("userid", id)
+    .single();
+  if (error) {
+    console.error("Error fetching user:", error);
+    return res.status(500).json({ error: "Failed to fetch user" });
+  }
+  res.json(data);
+});
+
+app.get("/messages/:chatid", async (req, res) => {
+  const { chatid } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("messageid, chatid, senderid, message, timestamp")
+      .eq("chatid", chatid)
+      .order("timestamp", { ascending: true });
+    if (error) {
+      console.error("Error fetching messages:", error.message);
+      return res.status(500).json({ error: "Failed to fetch messages" });
+    }
+    const formattedMessages = data.map((msg) => ({
+      messageid: msg.messageid,
+      chatid: msg.chatid,
+      senderid: msg.senderid,
+      message: msg.message,
+      timestamp: msg.timestamp,
+    }));
+    res.status(200).json(formattedMessages);
+  } catch (err) {
+    console.error("Unexpected error:", err.message);
+    res.status(500).json({ error: "Server error while fetching messages" });
+  }
+});
+
+app.post("/messages", async (req, res) => {
+  const { chatid, senderid, message } = req.body;
+  if (!chatid || !senderid || !message) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  try {
+    const { data, error } = await supabase
+      .from("messages")
+      .insert([{ chatid, senderid, message }])
+      .select()
+      .single();
+    if (error) {
+      console.error("Error inserting message:", error.message);
+      return res.status(500).json({ error: "Failed to send message" });
+    }
+    res.status(201).json({
+      messageid: data.messageid,
+      chatid: data.chatid,
+      senderid: data.senderid,
+      message: data.message,
+      timestamp: data.timestamp,
+    });
+  } catch (err) {
+    console.error("Unexpected error:", err.message);
+    res.status(500).json({ error: "Server error while sending message" });
+  }
+});
+
+server.listen(port, () => {
   console.log(`Server running on port ${port}.`);
 });

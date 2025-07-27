@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
+import { Socket } from "socket.io-client";
+import axios from "axios";
+
 import ChatMessage from "./ChatMessage";
 import UserList from "./UserList";
 import Header from ".//Header";
+import Auth from "./Auth";
+import Loader from "./Loader";
 
 import { FaUserTie } from "react-icons/fa";
 import { IoCall } from "react-icons/io5";
@@ -9,11 +14,20 @@ import { BsMicFill } from "react-icons/bs";
 import { IoIosSend } from "react-icons/io";
 import { RiMenuSearchFill } from "react-icons/ri";
 
-import { LoggedInContext } from "../context/LoginContext";
-import Auth from "./Auth";
+import { LoggedInContext, userDataContext } from "../context/LoginContext";
+import Spinner from "./Spinner";
 
 const Home = () => {
   const { loggedIn, setLoggedIn } = useContext(LoggedInContext);
+  const { userData, setUserData } = useContext(userDataContext);
+
+  const [messages, setMessages] = useState([]);
+  const [messageText, setMessageText] = useState("");
+
+  const [chatUsers, setChatUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const [searchResults, setSearchResults] = useState([]);
 
   const [isRecording, setIsRecording] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,31 +36,114 @@ const Home = () => {
   const minWidth = 250;
   const maxWidth = 400;
   const isDragging = useRef(false);
-
   const sidebarRef = useRef(null);
   const menuButtonRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const [loadingChat, setLoadingChat] = useState(false);
 
-  const users = [
-    { id: 1, name: "John Doe", lastMessage: "Hey, how's it going?" },
-    { id: 2, name: "Jane Smith", lastMessage: "Let's meet tomorrow!" },
-    { id: 3, name: "Alex Johnson", lastMessage: "See you at the event!" },
-    { id: 4, name: "John Doe", lastMessage: "Hey, how's it going?" },
-    { id: 5, name: "Jane Smith", lastMessage: "Let's meet tomorrow!" },
-    { id: 6, name: "Alex Johnson", lastMessage: "See you at the event!" },
-    { id: 7, name: "John Doe", lastMessage: "Hey, how's it going?" },
-    { id: 8, name: "Jane Smith", lastMessage: "Let's meet tomorrow!" },
-    { id: 9, name: "Alex Johnson", lastMessage: "See you at the event!" },
-    { id: 10, name: "John Doe", lastMessage: "Hey, how's it going?" },
-    { id: 12, name: "Jane Smith", lastMessage: "Let's meet tomorrow!" },
-    { id: 13, name: "Alex Johnson", lastMessage: "See you at the event!" },
-  ];
+  const [activeChatId, setActiveChatId] = useState(null);
+
+  useEffect(() => {
+    const container = messagesEndRef.current?.parentNode;
+    const isAtBottom =
+      container?.scrollHeight - container?.scrollTop - container?.clientHeight <
+      100;
+
+    if (isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  // const openChat = (chatId) => {
+  //   setActiveChatId(chatId);
+  // };
+
+  const handleSelectChat = async (user) => {
+    setLoadingChat(true); // Start loader
+    setSelectedUser(user);
+    setActiveChatId(user.chatid);
+    try {
+      const res = await axios.get(
+        `http://localhost:3000/messages/${user.chatid}`
+      );
+      setMessages(res.data);
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+      setMessages([]);
+    } finally {
+      setLoadingChat(false); // Stop loader
+    }
+  };
 
   const toggleRecording = () => {
     setIsRecording(!isRecording);
   };
 
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
+  const formatTime = (timestamp) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const handleSearch = async (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (value.trim() === "") {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/searchUsers?q=${value}&userid=${userData.userid}`
+      );
+      const allResults = response.data;
+      const existingIds = new Set(chatUsers.map((u) => u.userid));
+      const filteredResults = allResults.filter(
+        (user) => !existingIds.has(user.userid)
+      );
+      setSearchResults(filteredResults);
+    } catch (err) {
+      console.error("Search error:", err);
+    }
+  };
+
+  const handleStartChat = async (otherUserId) => {
+    try {
+      const response = await axios.post("http://localhost:3000/startChat", {
+        user1: userData.userid,
+        user2: otherUserId,
+      });
+      const { chatid } = response.data;
+      // Check if user already exists in UI
+      const alreadyPresent = chatUsers.some((u) => u.userid === otherUserId);
+      let userToSelect;
+      if (!alreadyPresent) {
+        // Get user details from backend
+        const res = await axios.get(
+          `http://localhost:3000/getUser/${otherUserId}`
+        );
+        const newUser = { ...res.data, chatid };
+        setChatUsers((prev) => [...prev, newUser]);
+        userToSelect = newUser;
+      } else {
+        // Add chatid to existing user if missing
+        userToSelect = chatUsers.find((u) => u.userid === otherUserId);
+        if (!userToSelect.chatid) userToSelect.chatid = chatid;
+      }
+      setSearchQuery("");
+      setSearchResults([]);
+      // Open chat
+      setActiveChatId(chatid);
+      setSelectedUser(userToSelect);
+    } catch (err) {
+      console.error("Error starting chat:", err);
+    }
   };
 
   const handleMouseDown = (e) => {
@@ -71,6 +168,18 @@ const Home = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  //  useEffect(() => {
+  //   Socket.on("message", (msg) => {
+  //     // Only add if the message belongs to the currently active chat
+  //     if (msg.chatId === activeChatId) {
+  //       setMessages((prev) => [...prev, msg]);
+  //     }
+  //   });
+  //   return () => {
+  //     Socket.off("message");
+  //   };
+  // }, [activeChatId]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -87,7 +196,62 @@ const Home = () => {
     document.addEventListener("touchstart", handleClickOutside);
   }, [isSidebarOpen]);
 
-  return loggedIn ? (
+  useEffect(() => {
+    const fetchChatUsers = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:3000/chattedUsers/${userData.userid}`
+        );
+        const data = response.data;
+        setChatUsers(data);
+      } catch (err) {
+        console.error("Error fetching chat users:", err);
+      }
+    };
+    if (userData?.userid) {
+      fetchChatUsers();
+    }
+  }, [userData]);
+
+  // useEffect(() => {
+  //   const fetchMessages = async () => {
+  //     if (!activeChatId) return;
+  //     try {
+  //       const res = await axios.get(
+  //         `http://localhost:3000/messages/${activeChatId}`
+  //       );
+  //       setMessages(res.data);
+  //     } catch (err) {
+  //       console.error("Failed to fetch messages:", err);
+  //     }
+  //   };
+  //   fetchMessages();
+  // }, [activeChatId]);
+
+  const sendMessage = async () => {
+    if (!messageText.trim() || !activeChatId) return;
+    const msg = {
+      message: messageText,
+      chatid: activeChatId,
+      senderid: userData.userid,
+    };
+    try {
+      await axios.post("http://localhost:3000/messages", msg); // Save to DB
+      setMessages((prev) => [...prev, msg]); // Update UI
+      setMessageText("");
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    }
+  };
+
+  if (loggedIn === null || userData === null || !userData.name) {
+    return <Loader />;
+  }
+  if (!loggedIn) {
+    return <Auth />;
+  }
+
+  return (
     <div
       className="bg-[#f0f2f5] "
       onMouseMove={handleMouseMove}
@@ -111,12 +275,12 @@ const Home = () => {
         >
           <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-6 py-3 sm:py-4 flex items-center">
             <FaUserTie className="text-2xl sm:text-3xl mr-2" />
-            <p className="text-xl sm:text-2xl">Nikhil R Nambiar</p>
+            <p className="text-xl sm:text-2xl">{userData.name}</p>
           </div>
           <div className="border-b border-[#e0e0e0] px-3 py-2">
             <input
               type="text"
-              className="w-full bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-base sm:text-xl rounded-lg"
+              className="w-full bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
               placeholder="Search for people..."
               value={searchQuery}
               onChange={handleSearch}
@@ -125,18 +289,36 @@ const Home = () => {
           <div className="h-[calc(100vh-140px)] sm:h-[75%]">
             <div className="overflow-y-auto scrollbar-hide h-full">
               {searchQuery ? (
-                <div className="flex items-center px-3 sm:px-5 py-3 cursor-pointer hover:bg-[#f5f5f5]">
-                  <FaUserTie className="text-3xl sm:text-4xl mr-3 sm:mr-4" />
-                  <div className="flex-1">
-                    <h3 className="text-base sm:text-lg">New User</h3>
-                    <p className="text-xs sm:text-sm text-[#666]">Online</p>
-                  </div>
-                  <button className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm hover:bg-[#0066cc]">
-                    Start Chat
-                  </button>
-                </div>
+                searchResults.length > 0 ? (
+                  searchResults.map((user) => (
+                    <div
+                      key={user.userid}
+                      className="flex items-center px-3 sm:px-5 py-3 cursor-pointer hover:bg-[#f5f5f5]"
+                    >
+                      <FaUserTie className="text-3xl sm:text-4xl mr-3 sm:mr-4" />
+                      <div className="flex-1">
+                        <h3 className="text-base sm:text-lg">{user.name}</h3>
+                        <p className="text-xs sm:text-sm text-[#666]">
+                          Not in chat
+                        </p>
+                      </div>
+                      <button
+                        className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm hover:bg-[#0066cc]"
+                        onClick={() => handleStartChat(user.userid)}
+                      >
+                        Start Chat
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="px-5 py-3 text-gray-500">No users found</p>
+                )
               ) : (
-                <UserList users={users} />
+                <UserList
+                  users={chatUsers}
+                  selectedUser={selectedUser}
+                  onSelect={handleSelectChat}
+                />
               )}
             </div>
           </div>
@@ -158,7 +340,9 @@ const Home = () => {
                 <RiMenuSearchFill className="text-4xl mr-1" />
               </button>
               <FaUserTie className="text-2xl sm:text-3xl mr-2" />
-              <p className="text-xl sm:text-2xl">Abhilash</p>
+              <h2 className="text-xl sm:text-2xl">
+                {selectedUser ? selectedUser.name : "Select a chat"}
+              </h2>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
               <IoCall className="text-2xl sm:text-3xl cursor-pointer" />
@@ -167,71 +351,29 @@ const Home = () => {
           {/* Chat Content Area */}
           <div className="flex h-[84vh] md:h-[77vh] flex-col bg-[#f0f2f5]">
             {/* Scrollable Messages */}
-            <div className=" overflow-y-auto scrollbar-hide px-3 sm:px-5 py-3 sm:py-5">
-              <ChatMessage
-                message="Hey, how's it going?"
-                isSender={false}
-                time="10:30 AM"
-              />
-              <ChatMessage
-                message=""
-                isSender={true}
-                time="10:31 AM"
-                isAudio={true}
-              />
-              <ChatMessage
-                message="Pretty good, thanks! How about you?"
-                isSender={true}
-                time="10:32 AM"
-              />
-              <ChatMessage
-                message=""
-                isSender={false}
-                time="10:33 AM"
-                isAudio={true}
-              />
-              <ChatMessage
-                message="Doing great! Want to grab coffee later?"
-                isSender={false}
-                time="10:35 AM"
-              />
-              <ChatMessage
-                message="Lorem ipsum dolor sit amet..."
-                isSender={true}
-                time="10:50 AM"
-              />
-              <ChatMessage
-                message="Another long message..."
-                isSender={true}
-                time="11:50 AM"
-              />
-              <ChatMessage
-                message="Doing great! Want to grab coffee later?"
-                isSender={false}
-                time="10:35 AM"
-              />
-              <ChatMessage
-                message="Lorem ipsum dolor sit amet..."
-                isSender={true}
-                time="10:50 AM"
-              />
-              <ChatMessage
-                message="Lorem ipsum dolor sit amet, consectetur adipisicing elit. Recusandae, inventore asperiores harum amet esse deserunt quam culpa! Placeat maiores aperiam modi error nisi atque ea. Placeat vel iste molestiae aspernatur!"
-                isSender={true}
-                time="11:50 AM"
-              />
-              <ChatMessage
-                message="Lorem ipsum dolor sit amet, consectetur adipisicing elit. Recusandae, inventore asperiores harum amet esse deserunt quam culpa! Placeat maiores aperiam modi error nisi atque ea. Placeat vel iste molestiae aspernatur!"
-                isSender={false}
-                time="11:51 AM"
-              />
-            </div>
+            {loadingChat ? (
+              <Spinner />
+            ) : (
+              <div className=" overflow-y-auto min-h-[93%] md:min-h-[82%] scrollbar-hide px-3 sm:px-5 py-3 sm:py-5">
+                {messages.map((msg, index) => (
+                  <ChatMessage
+                    key={msg.messageid}
+                    message={msg.message}
+                    isSender={msg.senderid === userData.userid}
+                    time={formatTime(msg.timestamp)}
+                  />
+                ))}
+                <div ref={messagesEndRef}></div>
+              </div>
+            )}
             {/* Fixed Input Bar */}
             <div className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center bottom-0">
               <input
                 type="text"
-                className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-sm sm:text-base rounded-2xl"
-                placeholder="Type a message..."
+                className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
+                placeholder="Send a message..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
               />
               <button
                 className={
@@ -243,7 +385,13 @@ const Home = () => {
               >
                 <BsMicFill />
               </button>
-              <button className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 hover:bg-[#0066cc] flex items-center justify-center">
+              <button
+                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 hover:bg-[#0066cc] flex items-center justify-center"
+                onClick={(e) => {
+                  e.preventDefault();
+                  sendMessage();
+                }}
+              >
                 <IoIosSend className="text-xl sm:text-2xl" />
               </button>
             </div>
@@ -251,8 +399,6 @@ const Home = () => {
         </div>
       </div>
     </div>
-  ) : (
-    <Auth />
   );
 };
 

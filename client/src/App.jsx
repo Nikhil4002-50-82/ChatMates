@@ -5,22 +5,38 @@ import Auth from "./components/Auth";
 import Loader from "./components/Loader";
 import { LoggedInContext, userDataContext } from "./context/LoginContext";
 import axios from "axios";
+// import { Socket } from "socket.io-client";
 
 const App = () => {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(null); // Initialize as null to indicate "unknown" state
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // useEffect(() => {
+  //   if (loggedIn) Socket.connect();
+  //   return () => {
+  //     Socket.disconnect();
+  //   };
+  // }, [loggedIn]);
 
   useEffect(() => {
     const checkSession = async () => {
       try {
-        console.log("Checking cookies before profile request:", document.cookie);
-        const response = await axios.get("https://my-chat-b2i2.onrender.com/profile", {
+        console.log(
+          "Checking cookies before profile request:",
+          document.cookie
+        );
+        const response = await axios.get("http://localhost:3000/profile", {
           withCredentials: true,
         });
         console.log("Profile response:", response.data);
-        setLoggedIn(true);
-        setUserData(response.data);
+        if (response.data && response.data.name) {
+          // Ensure userData has required fields
+          setLoggedIn(true);
+          setUserData(response.data);
+        } else {
+          throw new Error("Invalid user data");
+        }
       } catch (err) {
         console.log("Profile error:", {
           status: err.response?.status,
@@ -30,17 +46,21 @@ const App = () => {
           try {
             console.log("Attempting to refresh token...");
             const refreshResponse = await axios.get(
-              "https://my-chat-b2i2.onrender.com/refreshToken",
+              "http://localhost:3000/refreshToken",
               { withCredentials: true }
             );
             console.log("Refresh response:", refreshResponse.data);
             const retryResponse = await axios.get(
-              "https://my-chat-b2i2.onrender.com/profile",
+              "http://localhost:3000/profile",
               { withCredentials: true }
             );
             console.log("Retry profile response:", retryResponse.data);
-            setLoggedIn(true);
-            setUserData(retryResponse.data);
+            if (retryResponse.data && retryResponse.data.name) {
+              setLoggedIn(true);
+              setUserData(retryResponse.data);
+            } else {
+              throw new Error("Invalid user data after refresh");
+            }
           } catch (refreshErr) {
             console.log("Token refresh failed:", {
               status: refreshErr.response?.status,
