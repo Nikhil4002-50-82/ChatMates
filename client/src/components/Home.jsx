@@ -41,71 +41,6 @@ const Home = () => {
   const menuButtonRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [loadingChat, setLoadingChat] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        console.log(
-          "Checking cookies before profile request:",
-          document.cookie
-        );
-        const response = await axios.get(`${API_BASE_URL}/profile`, {
-          withCredentials: true,
-        });
-        console.log("Profile response:", response.data);
-        if (response.data && response.data.name) {
-          // Ensure userData has required fields
-          setLoggedIn(true);
-          setUserData(response.data);
-        } else {
-          throw new Error("Invalid user data");
-        }
-      } catch (err) {
-        console.log("Profile error:", {
-          status: err.response?.status,
-          message: err.response?.data?.message || err.message,
-        });
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          try {
-            console.log("Attempting to refresh token...");
-            const refreshResponse = await axios.get(
-              `${API_BASE_URL}/refreshToken`,
-              { withCredentials: true }
-            );
-            console.log("Refresh response:", refreshResponse.data);
-            const retryResponse = await axios.get(`${API_BASE_URL}/profile`, {
-              withCredentials: true,
-            });
-            console.log("Retry profile response:", retryResponse.data);
-            if (retryResponse.data && retryResponse.data.name) {
-              setLoggedIn(true);
-              setUserData(retryResponse.data);
-            } else {
-              throw new Error("Invalid user data after refresh");
-            }
-          } catch (refreshErr) {
-            console.log("Token refresh failed:", {
-              status: refreshErr.response?.status,
-              message: refreshErr.response?.data?.message || refreshErr.message,
-            });
-            setLoggedIn(false);
-            setUserData(null);
-          }
-        } else {
-          console.log("User not logged in:", {
-            status: err.response?.status,
-            message: err.response?.data?.message || err.message,
-          });
-          setLoggedIn(false);
-          setUserData(null);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkSession();
-  }, []);
 
   useEffect(() => {
     const container = messagesEndRef.current?.parentNode;
@@ -308,15 +243,18 @@ const Home = () => {
     };
   }, []);
 
-  if (loggedIn === null || userData === null || !userData.name) {
-    return <Loader />;
-  }
-  if (!loggedIn) {
-    return <Auth />;
-  }
-  if (loading) {
-    return <Loader />;
-  }
+ if (loggedIn === null) {
+  return <Loader />;
+}
+
+if (!loggedIn) {
+  return <Auth />;
+}
+
+// Optional: Wait for userData only if you're logged in
+if (!userData || !userData.name) {
+  return <Loader />;
+}
 
   return (
     <div

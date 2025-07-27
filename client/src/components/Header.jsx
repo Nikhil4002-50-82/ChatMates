@@ -1,7 +1,11 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
 import { GiChatBubble } from "react-icons/gi";
+
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
+
 import axios from "axios";
 import Loader from "./Loader";
 
@@ -19,8 +23,9 @@ const Header = () => {
       await axios.post(`${API_BASE_URL}/logout`, {}, { withCredentials: true });
       setLoggedIn(false);
       setUserData(null);
-      alert("Logged out successfully.");
-      navigate("/auth");
+      toast("Logged out successfully.", {
+        type: "success",
+      });
     } catch (error) {
       console.error("Logout failed:", error.message);
       setLoggedIn(false);
@@ -28,6 +33,7 @@ const Header = () => {
       navigate("/auth");
     } finally {
       setLoading(false);
+      navigate("/auth");
     }
   };
 

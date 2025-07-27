@@ -1,8 +1,11 @@
 import React, { useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import axios from "axios";
+
 import { GiChatBubble } from "react-icons/gi";
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
-import { useNavigate } from "react-router-dom";
+
 import Loader from "./Loader";
 
 const Auth = () => {
@@ -28,15 +31,14 @@ const Auth = () => {
           { withCredentials: true }
         );
         console.log("Login successful:", response.data);
-        alert(response?.data?.message);
+        toast(response?.data?.message, {
+          type: "success",
+        });
 
         // Fetch user profile to ensure userData is populated
-        const profileResponse = await axios.get(
-          `${API_BASE_URL}/profile`,
-          {
-            withCredentials: true,
-          }
-        );
+        const profileResponse = await axios.get(`${API_BASE_URL}/profile`, {
+          withCredentials: true,
+        });
         if (profileResponse.data && profileResponse.data.name) {
           setLoggedIn(true);
           setUserData(profileResponse.data);
@@ -49,7 +51,9 @@ const Auth = () => {
           "Login failed:",
           error.response?.data?.message || error.message
         );
-        alert(error.response?.data?.message || "Login failed.");
+        toast(error.response?.data?.message || "Login failed.", {
+          type: "error",
+        });
         setLoggedIn(false);
         setUserData(null);
       } finally {
@@ -67,13 +71,17 @@ const Auth = () => {
           response.data?.message || "User registered"
         );
         setIsLogin(true);
-        alert("Signup successful! Please log in.");
+        toast("Signup successful! Please log in.", {
+          type: "success",
+        });
       } catch (error) {
         console.error(
           "Signup failed:",
           error.response?.data?.message || error.message
         );
-        alert(error.response?.data?.message || "Signup failed.");
+        toast(error.response?.data?.message || "Signup failed.", {
+          type: "error",
+        });
       } finally {
         setLoading(false);
       }
