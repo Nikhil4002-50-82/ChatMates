@@ -9,6 +9,7 @@ import Loader from "./components/Loader";
 import { LoggedInContext, userDataContext } from "./context/LoginContext";
 
 const App = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [loggedIn, setLoggedIn] = useState(null); // Initialize as null to indicate "unknown" state
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,7 @@ const App = () => {
           "Checking cookies before profile request:",
           document.cookie
         );
-        const response = await axios.get("http://localhost:3000/profile", {
+        const response = await axios.get(`${API_BASE_URL}/profile`, {
           withCredentials: true,
         });
         console.log("Profile response:", response.data);
@@ -40,14 +41,13 @@ const App = () => {
           try {
             console.log("Attempting to refresh token...");
             const refreshResponse = await axios.get(
-              "http://localhost:3000/refreshToken",
+              `${API_BASE_URL}/refreshToken`,
               { withCredentials: true }
             );
             console.log("Refresh response:", refreshResponse.data);
-            const retryResponse = await axios.get(
-              "http://localhost:3000/profile",
-              { withCredentials: true }
-            );
+            const retryResponse = await axios.get(`${API_BASE_URL}/profile`, {
+              withCredentials: true,
+            });
             console.log("Retry profile response:", retryResponse.data);
             if (retryResponse.data && retryResponse.data.name) {
               setLoggedIn(true);
