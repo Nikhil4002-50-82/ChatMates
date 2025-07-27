@@ -6,6 +6,8 @@ import axios from "axios";
 import Loader from "./Loader";
 
 const Header = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   const { loggedIn, setLoggedIn } = useContext(LoggedInContext);
   const { setUserData } = useContext(userDataContext);
   const navigate = useNavigate();
@@ -14,10 +16,10 @@ const Header = () => {
   const logout = async () => {
     setLoading(true);
     try {
-      await axios.post("http://localhost:3000/logout", {}, { withCredentials: true });
+      await axios.post(`${API_BASE_URL}/logout`, {}, { withCredentials: true });
       setLoggedIn(false);
       setUserData(null);
-      alert("Logged out successfully.")
+      alert("Logged out successfully.");
       navigate("/auth");
     } catch (error) {
       console.error("Logout failed:", error.message);

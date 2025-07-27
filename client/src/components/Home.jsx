@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
-import { Socket } from "socket.io-client";
 import axios from "axios";
 
+import socket from "../socket";
 import ChatMessage from "./ChatMessage";
 import UserList from "./UserList";
 import Header from ".//Header";
 import Auth from "./Auth";
 import Loader from "./Loader";
+import Spinner from "./Spinner";
 
 import { FaUserTie } from "react-icons/fa";
 import { IoCall } from "react-icons/io5";
@@ -15,22 +16,22 @@ import { IoIosSend } from "react-icons/io";
 import { RiMenuSearchFill } from "react-icons/ri";
 
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
-import Spinner from "./Spinner";
 
 const Home = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   const { loggedIn, setLoggedIn } = useContext(LoggedInContext);
   const { userData, setUserData } = useContext(userDataContext);
 
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
-
   const [chatUsers, setChatUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-
   const [searchResults, setSearchResults] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [isRecording, setIsRecording] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const minWidth = 250;
@@ -40,8 +41,6 @@ const Home = () => {
   const menuButtonRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [loadingChat, setLoadingChat] = useState(false);
-
-  const [activeChatId, setActiveChatId] = useState(null);
 
   useEffect(() => {
     const container = messagesEndRef.current?.parentNode;
@@ -53,42 +52,35 @@ const Home = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  // const openChat = (chatId) => {
-  //   setActiveChatId(chatId);
-  // };
-
   const handleSelectChat = async (user) => {
-    setLoadingChat(true); // Start loader
+    setLoadingChat(true);
     setSelectedUser(user);
     setActiveChatId(user.chatid);
     try {
-      const res = await axios.get(
-        `http://localhost:3000/messages/${user.chatid}`
-      );
+      const res = await axios.get(`${API_BASE_URL}/messages/${user.chatid}`);
       setMessages(res.data);
     } catch (err) {
       console.error("Failed to load messages:", err);
       setMessages([]);
     } finally {
-      setLoadingChat(false); // Stop loader
+      setLoadingChat(false);
     }
-  };
-
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
   };
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const toggleRecording = () => {
+    setIsRecording(!isRecording);
   };
 
   const handleSearch = async (e) => {
@@ -100,7 +92,7 @@ const Home = () => {
     }
     try {
       const response = await axios.get(
-        `http://localhost:3000/searchUsers?q=${value}&userid=${userData.userid}`
+        `${API_BASE_URL}/searchUsers?q=${value}&userid=${userData.userid}`
       );
       const allResults = response.data;
       const existingIds = new Set(chatUsers.map((u) => u.userid));
@@ -115,7 +107,7 @@ const Home = () => {
 
   const handleStartChat = async (otherUserId) => {
     try {
-      const response = await axios.post("http://localhost:3000/startChat", {
+      const response = await axios.post(`${API_BASE_URL}/startChat`, {
         user1: userData.userid,
         user2: otherUserId,
       });
@@ -125,9 +117,7 @@ const Home = () => {
       let userToSelect;
       if (!alreadyPresent) {
         // Get user details from backend
-        const res = await axios.get(
-          `http://localhost:3000/getUser/${otherUserId}`
-        );
+        const res = await axios.get(`${API_BASE_URL}/getUser/${otherUserId}`);
         const newUser = { ...res.data, chatid };
         setChatUsers((prev) => [...prev, newUser]);
         userToSelect = newUser;
@@ -168,18 +158,6 @@ const Home = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  //  useEffect(() => {
-  //   Socket.on("message", (msg) => {
-  //     // Only add if the message belongs to the currently active chat
-  //     if (msg.chatId === activeChatId) {
-  //       setMessages((prev) => [...prev, msg]);
-  //     }
-  //   });
-  //   return () => {
-  //     Socket.off("message");
-  //   };
-  // }, [activeChatId]);
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -200,7 +178,7 @@ const Home = () => {
     const fetchChatUsers = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:3000/chattedUsers/${userData.userid}`
+          `${API_BASE_URL}/chattedUsers/${userData.userid}`
         );
         const data = response.data;
         setChatUsers(data);
@@ -213,36 +191,41 @@ const Home = () => {
     }
   }, [userData]);
 
-  // useEffect(() => {
-  //   const fetchMessages = async () => {
-  //     if (!activeChatId) return;
-  //     try {
-  //       const res = await axios.get(
-  //         `http://localhost:3000/messages/${activeChatId}`
-  //       );
-  //       setMessages(res.data);
-  //     } catch (err) {
-  //       console.error("Failed to fetch messages:", err);
-  //     }
-  //   };
-  //   fetchMessages();
-  // }, [activeChatId]);
-
-  const sendMessage = async () => {
+  const sendMessage = () => {
     if (!messageText.trim() || !activeChatId) return;
     const msg = {
       message: messageText,
       chatid: activeChatId,
       senderid: userData.userid,
     };
-    try {
-      await axios.post("http://localhost:3000/messages", msg); // Save to DB
-      setMessages((prev) => [...prev, msg]); // Update UI
-      setMessageText("");
-    } catch (err) {
-      console.error("Failed to send message:", err);
-    }
+    // Emit via socket instead of Axios
+    socket.emit("send_message", msg);
+    setMessageText(""); // Clear input
   };
+  useEffect(() => {
+    socket.on("receive_message", (msg) => {
+      // Only show messages for current chat
+      if (msg.chatid === activeChatId) {
+        setMessages((prev) => [...prev, msg]);
+      }
+    });
+    return () => {
+      socket.off("receive_message");
+    };
+  }, [activeChatId]);
+  useEffect(() => {
+    if (userData?.userid) {
+      socket.emit("user-connected", userData.userid);
+    }
+  }, [userData]);
+  useEffect(() => {
+    socket.on("receive_message", (data) => {
+      setMessages((prev) => [...prev, data]);
+    });
+    return () => {
+      socket.off("receive_message");
+    };
+  }, []);
 
   if (loggedIn === null || userData === null || !userData.name) {
     return <Loader />;

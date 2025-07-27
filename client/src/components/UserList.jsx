@@ -13,11 +13,8 @@ const UserList = ({ users, selectedUser, onSelect }) => {
           }`}
         >
           <FaUserTie className="text-4xl mr-2" />
-          <div className="flex-1">
+          <div className="flex items-center">
             <h3 className="text-lg font-semibold">{user.name}</h3>
-            {/* <p className="text-sm text-[#666] truncate max-w-[200px]">
-              {user.phoneno}
-            </p> */}
           </div>
         </div>
       ))}

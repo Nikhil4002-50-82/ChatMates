@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import Loader from "./Loader";
 
 const Auth = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -22,7 +23,7 @@ const Auth = () => {
     if (isLogin) {
       try {
         const response = await axios.post(
-          "http://localhost:3000/login",
+          `${API_BASE_URL}/login`,
           { email, password },
           { withCredentials: true }
         );
@@ -31,7 +32,7 @@ const Auth = () => {
 
         // Fetch user profile to ensure userData is populated
         const profileResponse = await axios.get(
-          "http://localhost:3000/profile",
+          `${API_BASE_URL}/profile`,
           {
             withCredentials: true,
           }
@@ -57,7 +58,7 @@ const Auth = () => {
     } else {
       try {
         const response = await axios.post(
-          "http://localhost:3000/registerUser",
+          `${API_BASE_URL}/registerUser`,
           { email, password, name, phoneno: phoneNo },
           { withCredentials: true }
         );

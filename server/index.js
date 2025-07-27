@@ -27,37 +27,39 @@ function authenticateAccessToken(req, res, next) {
 const app = express();
 const port = 3000;
 const server = createServer(app);
-// const io = new Server(server, {
-//   cors: {
-//     origin:
-//       process.env.NODE_ENV === "production"
-//         ? "https://my-chat-eta-seven.vercel.app/"
-//         : "http://localhost:5173",
-//     credentials: true,
-//   },
-// });
+const io = new Server(server, {
+  cors: {
+    origin:
+      process.env.NODE_ENV === "production"
+        ? "https://my-chat-eta-seven.vercel.app"
+        : "http://localhost:5173",
+    credentials: true,
+  },
+});
 
-// io.on("connection", (socket) => {
-//   console.log("✅ User connected:", socket.id);
-//   socket.on("send_message", async (messageData) => {
-//     const { senderid, chatid, message } = messageData;
-//     // Store in Supabase
-//     const { data, error } = await supabase
-//       .from("messages")
-//       .insert([{ chatid, senderid, message }]);
-//     if (!error) {
-//       io.emit("receive_message", {
-//         ...data[0],
-//         created_at: new Date().toISOString(),
-//       });
-//     } else {
-//       console.error("❌ Supabase insert error:", error);
-//     }
-//   });
-//   socket.on("disconnect", () => {
-//     console.log("❌ User disconnected:", socket.id);
-//   });
-// });
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+  socket.on("send_message", async (messageData) => {
+    const { senderid, chatid, message } = messageData;
+    const { data, error } = await supabase
+      .from("messages")
+      .insert([{ chatid, senderid, message }])
+      .select();
+    if (!error && data?.length > 0) {
+      io.emit("receive_message", {
+        ...data[0],
+        created_at: new Date().toISOString(),
+      });
+    } else if (error) {
+      console.error("Supabase insert error:", error);
+    } else {
+      console.warn("No data returned from insert.");
+    }
+  });
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
 
 app.use(
   cors({
