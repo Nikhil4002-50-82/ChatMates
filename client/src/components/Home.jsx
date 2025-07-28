@@ -33,7 +33,7 @@ const Home = () => {
 
   const [isRecording, setIsRecording] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(300);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const minWidth = 250;
   const maxWidth = 400;
   const isDragging = useRef(false);
@@ -71,6 +71,7 @@ const Home = () => {
       console.error("Failed to load messages:", err);
       setMessages([]);
     } finally {
+      toggleSidebar();
       setLoadingChat(false);
     }
   };
@@ -243,18 +244,18 @@ const Home = () => {
     };
   }, []);
 
- if (loggedIn === null) {
-  return <Loader />;
-}
+  if (loggedIn === null) {
+    return <Loader />;
+  }
 
-if (!loggedIn) {
-  return <Auth />;
-}
+  if (!loggedIn) {
+    return <Auth />;
+  }
 
-// Optional: Wait for userData only if you're logged in
-if (!userData || !userData.name) {
-  return <Loader />;
-}
+  // Optional: Wait for userData only if you're logged in
+  if (!userData || !userData.name) {
+    return <Loader />;
+  }
 
   return (
     <div
@@ -263,24 +264,24 @@ if (!userData || !userData.name) {
       onMouseUp={handleMouseUp}
     >
       <Header />
-      <div className="w-full h-[calc(100vh-80px)] flex flex-col sm:flex-row">
+      <div className="w-full h-[calc(100dvh-80px)] flex flex-col sm:flex-row">
         {/* Sidebar */}
         <div
           ref={sidebarRef}
-          className={`bg-white border-r border-[#e0e0e0] fixed sm:static top-0 left-0 h-full sm:h-auto transition-transform duration-300 ease-in-out z-50 ${
+          className={`bg-white border-r border-[#e0e0e0] fixed sm:static  left-0 h-full sm:h-auto transition-transform duration-300 ease-in-out z-50 ${
             isSidebarOpen
               ? "translate-x-0"
               : "-translate-x-full sm:translate-x-0"
           }`}
           style={{
             width: `${sidebarWidth}px`,
-            minWidth: "250px",
-            maxWidth: "400px",
+            minWidth: "300px",
+            maxWidth: "600px",
           }}
         >
-          <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-6 py-3 sm:py-4 flex items-center">
+          <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-6 py-4 flex items-center">
             <FaUserTie className="text-2xl sm:text-3xl mr-2" />
-            <p className="text-xl sm:text-2xl">{userData.name}</p>
+            <h2 className="text-xl sm:text-2xl">{userData.name}</h2>
           </div>
           <div className="border-b border-[#e0e0e0] px-3 py-2">
             <input
@@ -291,7 +292,7 @@ if (!userData || !userData.name) {
               onChange={handleSearch}
             />
           </div>
-          <div className="h-[calc(100vh-140px)] sm:h-[75%]">
+          <div className="h-[calc(100dvh-140px)] sm:h-[75%]">
             <div className="overflow-y-auto scrollbar-hide h-full">
               {searchQuery ? (
                 searchResults.length > 0 ? (
@@ -308,7 +309,7 @@ if (!userData || !userData.name) {
                         </p>
                       </div>
                       <button
-                        className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm hover:bg-[#0066cc]"
+                        className="bg-custom1 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm hover:bg-[#0066cc]"
                         onClick={() => handleStartChat(user.userid)}
                       >
                         Start Chat
@@ -330,7 +331,7 @@ if (!userData || !userData.name) {
         </div>
         {/* Resize Handle */}
         <div
-          className="hidden sm:block w-1 bg-[#e0e0e0] cursor-col-resize hover:bg-blue-600 transition-colors"
+          className="hidden sm:block w-1 bg-[#e0e0e0] cursor-col-resize hover:bg-custom1 transition-colors"
           onMouseDown={handleMouseDown}
         ></div>
         {/* Chat Area */}
@@ -354,7 +355,7 @@ if (!userData || !userData.name) {
             </div>
           </div>
           {/* Chat Content Area */}
-          <div className="flex h-[84vh] md:h-[77vh] flex-col bg-[#f0f2f5]">
+          <div className="flex h-[84dvh] md:h-[77dvh] flex-col bg-[#f0f2f5]">
             {/* Scrollable Messages */}
             {loadingChat ? (
               <Spinner />
@@ -369,10 +370,14 @@ if (!userData || !userData.name) {
                   />
                 ))}
                 <div ref={messagesEndRef}></div>
+                <div className="h-16 sm:hidden" />
               </div>
             )}
             {/* Fixed Input Bar */}
-            <div className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center bottom-0">
+            <div
+              className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center 
+             sm:relative fixed bottom-0 left-0 right-0 z-50"
+            >
               <input
                 type="text"
                 className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
@@ -391,7 +396,7 @@ if (!userData || !userData.name) {
                 <BsMicFill />
               </button>
               <button
-                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 hover:bg-[#0066cc] flex items-center justify-center"
+                className="bg-custom1 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 hover:bg-[#0066cc] flex items-center justify-center"
                 onClick={(e) => {
                   e.preventDefault();
                   sendMessage();

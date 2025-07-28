@@ -93,14 +93,14 @@ const Auth = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-blue-600 p-4 sm:p-6">
+    <div className="flex items-center justify-center min-h-screen bg-custom1 p-4 sm:p-6">
       <div className="bg-white w-full max-w-lg p-6 sm:p-8 rounded-2xl shadow-xl transition-all duration-300 transform hover:scale-[1.02] sm:hover:shadow-2xl">
         <div className="flex justify-center mb-8 bg-gray-100 rounded-full p-1">
           <button
             onClick={() => setIsLogin(true)}
             className={`flex-1 py-3 text-xl sm:text-2xl font-medium rounded-full transition-all duration-200 ${
               isLogin
-                ? "bg-blue-600 text-white shadow-md"
+                ? "bg-custom1 text-white shadow-md"
                 : "text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -110,7 +110,7 @@ const Auth = () => {
             onClick={() => setIsLogin(false)}
             className={`flex-1 py-3 text-xl sm:text-2xl font-medium rounded-full transition-all duration-200 ${
               !isLogin
-                ? "bg-blue-600 text-white shadow-md"
+                ? "bg-custom1 text-white shadow-md"
                 : "text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -156,7 +156,7 @@ const Auth = () => {
           />
           <button
             type="submit"
-            className="bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-semibold text-xl sm:text-2xl"
+            className="bg-custom1 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-semibold text-xl sm:text-2xl"
             disabled={loading}
           >
             {isLogin ? "Login" : "Sign Up"}
@@ -164,8 +164,8 @@ const Auth = () => {
         </form>
         <div className="text-center text-lg text-gray-500 mt-6 flex items-center justify-center">
           <p className="mr-2">Welcome to </p>
-          <span className="font-semibold text-blue-600">My-Chat</span>
-          <GiChatBubble className="ml-1 text-blue-600" />
+          <span className="font-semibold text-custom1">ChatMates</span>
+          <GiChatBubble className="ml-1 text-custom1" />
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ const ChatMessage = ({ message, isSender, time, isAudio }) => {
     <div
       className={`max-w-[60%] mb-3 p-3 rounded-2xl relative flex flex-col h-auto ${
         isSender
-          ? "bg-blue-600 text-white ml-auto rounded-br-[5px]"
+          ? "bg-custom1 text-white ml-auto rounded-br-[5px]"
           : "bg-white rounded-bl-[5px]"
       }`}
     >
@@ -16,7 +16,7 @@ const ChatMessage = ({ message, isSender, time, isAudio }) => {
           <div className="flex-1 h-1 bg-[#ccc] rounded-full overflow-hidden">
             <div
               className={`w-1/2 h-full ${
-                isSender ? "bg-white" : "bg-blue-600"
+                isSender ? "bg-white" : "bg-custom1"
               }`}
             ></div>
           </div>

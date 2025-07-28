@@ -3,9 +3,9 @@ import { GiChatBubble } from "react-icons/gi";
 
 const Loader = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-blue-600 relative overflow-hidden font-custom">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-custom1 relative overflow-hidden font-custom">
       {/* Background Pulse Effect */}
-      <div className="absolute inset-0 bg-blue-700 opacity-30 animate-background-pulse"></div>
+      <div className="absolute inset-0 bg-custom1 opacity-30 animate-background-pulse"></div>
       <div className="relative w-24 h-24 sm:w-32 sm:h-32">
         {/* Orbiting Chat Icon */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -17,7 +17,7 @@ const Loader = () => {
         </div>
       </div>
       <h1 className="mt-6 text-white text-3xl md:text-5xl font-semibold animate-pulse">
-        My-Chat
+        ChatMates
       </h1>
       <p className="mt-2 text-white text-xl opacity-75">
         Connecting you to your conversations...

@@ -8,7 +8,7 @@ const UserList = ({ users, selectedUser, onSelect }) => {
         <div
           key={user.userid}
           onClick={() => onSelect(user)}
-          className={`flex items-center px-5 py-3 cursor-pointer md:hover:bg-blue-600 text-black border-b-2 border-collapse border-[#e0e0e0] md:hover:text-white ${
+          className={`flex items-center px-5 py-3 cursor-pointer md:hover:bg-custom1 text-black border-b-2 border-collapse border-[#e0e0e0] md:hover:text-white ${
             selectedUser?.userid === user.userid ? " md:bg-gray-100" : ""
           }`}
         >
