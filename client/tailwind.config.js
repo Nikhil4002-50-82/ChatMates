@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+import colors from "tailwindcss/colors";
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
@@ -6,8 +7,9 @@ export default {
       fontFamily: {
         custom: [`Caveat`, `cursive`],
       },
-      backgroundColor: {
-        custom1: "#9B1C31",
+      colors: {
+        custom1: "#9B1C31", // define once here
+        ...colors,
       },
     },
   },

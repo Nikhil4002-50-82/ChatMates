@@ -41,17 +41,8 @@ const Home = () => {
   const menuButtonRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [loadingChat, setLoadingChat] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const container = messagesEndRef.current?.parentNode;
-    const isAtBottom =
-      container?.scrollHeight - container?.scrollTop - container?.clientHeight <
-      100;
-
-    if (isAtBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -357,7 +348,7 @@ const Home = () => {
           {/* Chat Content Area */}
           <div className="flex h-[84dvh] md:h-[77dvh] flex-col bg-[#f0f2f5]">
             {/* Scrollable Messages */}
-            {loadingChat ? (
+            {loadingChat || loading ? (
               <Spinner />
             ) : (
               <div className=" overflow-y-auto min-h-[93%] md:min-h-[82%] scrollbar-hide px-3 sm:px-5 py-3 sm:py-5">
