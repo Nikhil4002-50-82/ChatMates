@@ -7,7 +7,7 @@ const ChatMessage = ({ message, isSender, time, isAudio }) => {
       className={`max-w-[60%] mb-3 p-3 rounded-2xl relative flex flex-col h-auto ${
         isSender
           ? "bg-custom1 text-white ml-auto rounded-br-[5px]"
-          : "bg-white rounded-bl-[5px]"
+          : "bg-orange-300 text-black rounded-bl-[5px]"
       }`}
     >
       {isAudio ? (
@@ -33,7 +33,7 @@ const ChatMessage = ({ message, isSender, time, isAudio }) => {
       )}
       <small
         className={`text-lg absolute bottom-1 right-2 ${
-          isSender ? "text-[#e0e0e0]" : "text-[#aaa]"
+          isSender ? "text-white" : "text-black"
         }`}
       >
         {time}

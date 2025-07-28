@@ -8,7 +8,9 @@ export default {
         custom: [`Caveat`, `cursive`],
       },
       colors: {
-        custom1: "#9B1C31", // define once here
+        custom1: "#9B1C31",
+        custom2:"#A47864",
+        custom3:"#C4BAB3",
         ...colors,
       },
     },

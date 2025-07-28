@@ -42,7 +42,7 @@ const Header = () => {
   }
 
   return (
-    <div className="w-full flex items-center justify-between px-2 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-3 md:py-4 bg-custom1">
+    <div className="w-full h-[7dvh] lg:h-[12dvh] flex items-center justify-between px-2 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-3 md:py-4 bg-custom1">
       <div className="flex items-center">
         <span>
           <GiChatBubble className="text-white text-3xl sm:text-4xl md:text-5xl" />
