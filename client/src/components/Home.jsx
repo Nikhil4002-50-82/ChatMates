@@ -309,7 +309,7 @@ const Home = () => {
                         </p>
                       </div>
                       <button
-                        className="bg-custom1 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm hover:bg-[#0066cc]"
+                        className="bg-custom1 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm"
                         onClick={() => handleStartChat(user.userid)}
                       >
                         Start Chat
@@ -396,7 +396,7 @@ const Home = () => {
                 <BsMicFill />
               </button>
               <button
-                className="bg-custom1 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 hover:bg-[#0066cc] flex items-center justify-center"
+                className="bg-custom1 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 flex items-center justify-center"
                 onClick={(e) => {
                   e.preventDefault();
                   sendMessage();

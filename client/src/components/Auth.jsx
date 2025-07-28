@@ -123,7 +123,7 @@ const Auth = () => {
               <input
                 type="text"
                 placeholder="Full Name"
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-lg sm:text-xl"
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-700 transition duration-200 text-lg sm:text-xl"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -131,7 +131,7 @@ const Auth = () => {
               <input
                 type="text"
                 placeholder="Phone Number"
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-lg sm:text-xl"
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-700 transition duration-200 text-lg sm:text-xl"
                 onChange={(e) => setPhoneNo(e.target.value)}
                 value={phoneNo}
                 required
@@ -141,7 +141,7 @@ const Auth = () => {
           <input
             type="email"
             placeholder="Email"
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-lg sm:text-xl"
+            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-700 transition duration-200 text-lg sm:text-xl"
             onChange={(e) => setEmail(e.target.value)}
             value={email}
             required
@@ -149,14 +149,14 @@ const Auth = () => {
           <input
             type="password"
             placeholder="Password"
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-lg sm:text-xl"
+            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-700 transition duration-200 text-lg sm:text-xl"
             onChange={(e) => setPassword(e.target.value)}
             value={password}
             required
           />
           <button
             type="submit"
-            className="bg-custom1 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-semibold text-xl sm:text-2xl"
+            className="bg-custom1 text-white py-3 rounded-lg transition duration-200 font-semibold text-xl sm:text-2xl"
             disabled={loading}
           >
             {isLogin ? "Login" : "Sign Up"}
