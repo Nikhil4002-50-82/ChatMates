@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import supabase from "./utils/supabase.js";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -251,7 +252,7 @@ app.get("/profile", authenticateAccessToken, async (req, res) => {
   }
 });
 
-app.get("/chattedUsers/:userid",authenticateAccessToken, async (req, res) => {
+app.get("/chattedUsers/:userid", authenticateAccessToken, async (req, res) => {
   const { userid } = req.params;
   // Step 1: Get all chat IDs the user is a member of
   const { data: chatMemberships, error } = await supabase
@@ -280,7 +281,7 @@ app.get("/chattedUsers/:userid",authenticateAccessToken, async (req, res) => {
   res.json(uniqueUsers);
 });
 
-app.get("/searchUsers",authenticateAccessToken, async (req, res) => {
+app.get("/searchUsers", authenticateAccessToken, async (req, res) => {
   const { q, userid } = req.query;
   const { data, error } = await supabase
     .from("users")
@@ -292,7 +293,7 @@ app.get("/searchUsers",authenticateAccessToken, async (req, res) => {
   res.json(data);
 });
 
-app.post("/startChat",authenticateAccessToken, async (req, res) => {
+app.post("/startChat", authenticateAccessToken, async (req, res) => {
   const { user1, user2 } = req.body;
   try {
     // Get chatids where user1 is a member
@@ -344,7 +345,7 @@ app.post("/startChat",authenticateAccessToken, async (req, res) => {
   }
 });
 
-app.get("/getUser/:id",authenticateAccessToken, async (req, res) => {
+app.get("/getUser/:id", authenticateAccessToken, async (req, res) => {
   const { id } = req.params;
   const { data, error } = await supabase
     .from("users")
@@ -358,7 +359,7 @@ app.get("/getUser/:id",authenticateAccessToken, async (req, res) => {
   res.json(data);
 });
 
-app.get("/messages/:chatid",authenticateAccessToken, async (req, res) => {
+app.get("/messages/:chatid", authenticateAccessToken, async (req, res) => {
   const { chatid } = req.params;
   try {
     const { data, error } = await supabase
@@ -384,7 +385,7 @@ app.get("/messages/:chatid",authenticateAccessToken, async (req, res) => {
   }
 });
 
-app.post("/messages",authenticateAccessToken, async (req, res) => {
+app.post("/messages", authenticateAccessToken, async (req, res) => {
   const { chatid, senderid, message } = req.body;
   if (!chatid || !senderid || !message) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -410,6 +411,52 @@ app.post("/messages",authenticateAccessToken, async (req, res) => {
     console.error("Unexpected error:", err.message);
     res.status(500).json({ error: "Server error while sending message" });
   }
+});
+
+const otpStore = new Map();
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
+}
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+app.post("/sendOtp", async (req, res) => {
+  const { email } = req.body;
+  const otp = generateOTP();
+  const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+  otpStore.set(email, { otp, expiry });
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP Code for ChatMates!!",
+      text: `Your OTP is ${otp}`,
+    });
+    res.json({ success: true, message: "OTP sent" });
+  } catch (error) {
+    console.error("OTP send failed:", error.message);
+    res.status(500).json({ success: false, error: "Failed to send OTP" });
+  }
+});
+
+app.post("/verifyOtp", (req, res) => {
+  const { email, otp } = req.body;
+  const record = otpStore.get(email);
+  if (!record)
+    return res.status(400).json({ success: false, error: "OTP not found" });
+  if (Date.now() > record.expiry) {
+    otpStore.delete(email);
+    return res.status(400).json({ success: false, error: "OTP expired" });
+  }
+  if (otp !== record.otp)
+    return res.status(400).json({ success: false, error: "Invalid OTP" });
+  otpStore.delete(email);
+  return res.json({ success: true, message: "OTP verified" });
 });
 
 server.listen(port, () => {

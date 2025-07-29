@@ -10,10 +10,10 @@ import Loader from "./Loader";
 import Spinner from "./Spinner";
 
 import { FaUserTie } from "react-icons/fa";
-import { IoCall } from "react-icons/io5";
+import { IoCall ,IoCloudUploadSharp} from "react-icons/io5";
 import { BsMicFill } from "react-icons/bs";
 import { IoIosSend } from "react-icons/io";
-import { RiMenuSearchFill } from "react-icons/ri";
+import { RiMenuSearchFill,RiFileUploadFill  } from "react-icons/ri";
 
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
 
@@ -132,6 +132,7 @@ const Home = () => {
         if (!userToSelect.chatid) userToSelect.chatid = chatid;
       }
       setSearchQuery("");
+      toggleSidebar();
       setSearchResults([]);
       // Open chat
       setActiveChatId(chatid);
@@ -300,10 +301,10 @@ const Home = () => {
                         </p>
                       </div>
                       <button
-                        className="bg-custom1 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm"
+                        className="bg-custom1 w-24 h-10 font-semibold text-white px-1 sm:px-2 py-1 sm:py-2 rounded-lg text-md sm:text-lg flex items-center justify-center"
                         onClick={() => handleStartChat(user.userid)}
                       >
-                        Start Chat
+                        <p>Start Chat</p>
                       </button>
                     </div>
                   ))
@@ -369,6 +370,8 @@ const Home = () => {
               className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center 
              sm:relative fixed bottom-0 left-0 right-0 z-50"
             >
+              <input type="file" id="fileUpload" className="hidden" />
+              <label htmlFor="fileUpload" className="cursor-pointer"><IoCloudUploadSharp className="text-custom1 text-3xl sm:text-4xl mr-2 sm:mr-3"/></label>
               <input
                 type="text"
                 className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
@@ -379,7 +382,7 @@ const Home = () => {
               <button
                 className={
                   isRecording
-                    ? "text-red-600 text-lg sm:text-xl ml-2 animate-pulse"
+                    ? "text-custom1 text-lg sm:text-xl ml-2 animate-pulse"
                     : "text-lg sm:text-xl ml-2"
                 }
                 onClick={toggleRecording}

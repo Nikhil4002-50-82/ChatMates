@@ -11,6 +11,11 @@
   }
 }
 
+.Toastify__toast {
+  font-family: 'Caveat', cursive;
+  font-size: 1.6em;
+}
+
 .animate-spin-slow {
   animation: spin-slow 3s linear infinite;
 }

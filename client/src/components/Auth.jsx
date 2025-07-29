@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
+import OtpInput from "react-otp-input";
 
 import { GiChatBubble } from "react-icons/gi";
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
@@ -19,11 +20,14 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { setLoggedIn } = useContext(LoggedInContext);
   const { setUserData } = useContext(userDataContext);
+  const [isOTPPhase, setIsOTPPhase] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    if (isLogin) {
+    if (isLogin && !isOTPPhase) {
       try {
         const response = await axios.post(
           `${API_BASE_URL}/login`,
@@ -88,12 +92,58 @@ const Auth = () => {
     }
   };
 
+  const sendOtp = async () => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/sendOtp`,
+        {
+          email,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+      toast(response?.data?.message, {
+        type: "success",
+      });
+    } catch (error) {
+      toast(error.response?.data?.error || "OTP request failed", {
+        type: "error",
+      });
+    }
+  };
+
+  const verifyOtp = async () => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/verifyOtp`,
+        {
+          email,
+          otp,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+      toast(response?.data?.message, {
+        type: "success",
+      });
+      if (response?.data?.success === true) {
+        setOtpVerified(true);
+      }
+    } catch (error) {
+      toast(error.response?.data?.error || "OTP request failed", {
+        type: "error",
+      });
+    }
+  };
+
   if (loading) {
     return <Loader />;
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-custom1 p-4 sm:p-6">
+    <div className="flex items-center justify-center min-h-[100dvh] bg-custom1 p-4 sm:p-6">
       <div className="bg-white w-full max-w-lg p-6 sm:p-8 rounded-2xl shadow-xl transition-all duration-300 transform hover:scale-[1.02] sm:hover:shadow-2xl">
         <div className="flex justify-center mb-8 bg-gray-100 rounded-full p-1">
           <button
@@ -146,21 +196,55 @@ const Auth = () => {
             value={email}
             required
           />
-          <input
-            type="password"
-            placeholder="Password"
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-700 transition duration-200 text-lg sm:text-xl"
-            onChange={(e) => setPassword(e.target.value)}
-            value={password}
-            required
-          />
-          <button
-            type="submit"
-            className="bg-custom1 text-white py-3 rounded-lg transition duration-200 font-semibold text-xl sm:text-2xl"
-            disabled={loading}
-          >
-            {isLogin ? "Login" : "Sign Up"}
-          </button>
+          <div className="flex items-center justify-around">
+            <button
+              className="bg-custom1 rounded-2xl text-white h-12 w-32 text-lg md:text-xl font-semibold mr-2"
+              onClick={(e) => {
+                e.preventDefault();
+                sendOtp();
+              }}
+            >
+              Send OTP
+            </button>
+            <input
+              type="text"
+              placeholder="OTP"
+              className="px-4 w-[40%] py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-700 transition duration-200 text-lg sm:text-xl"
+              onChange={(e) => {
+                setOtp(e.target.value);
+              }}
+              value={otp}
+              required
+            />
+            <button
+              className="bg-custom1 rounded-2xl text-white h-12 w-32 text-lg md:text-xl font-semibold ml-2"
+              onClick={(e) => {
+                e.preventDefault();
+                verifyOtp();
+              }}
+            >
+              Verify OTP
+            </button>
+          </div>
+          {otpVerified && (
+            <>
+              <input
+                type="password"
+                placeholder="Password"
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-700 transition duration-200 text-lg sm:text-xl"
+                onChange={(e) => setPassword(e.target.value)}
+                value={password}
+                required
+              />
+              <button
+                type="submit"
+                className="bg-custom1 text-white py-3 rounded-lg transition duration-200 font-semibold text-xl sm:text-2xl"
+                disabled={loading}
+              >
+                {isLogin ? "Login" : "Sign Up"}
+              </button>
+            </>
+          )}
         </form>
         <div className="text-center text-lg text-gray-500 mt-6 flex items-center justify-center">
           <p className="mr-2">Welcome to </p>
@@ -171,5 +255,4 @@ const Auth = () => {
     </div>
   );
 };
-
 export default Auth;
