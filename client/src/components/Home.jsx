@@ -251,7 +251,7 @@ const Home = () => {
 
   return (
     <div
-      className="bg-[#f0f2f5] "
+      className="bg-[#f0f2f5] h-[100dvh] "
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
