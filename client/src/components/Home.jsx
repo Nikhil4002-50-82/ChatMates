@@ -396,7 +396,7 @@ const Home = () => {
             )}
             {/* Fixed Input Bar */}
             {selectedFile && (
-                <span className="text-lg w-auto text-gray-500 ml-2 bottom-[3.2em] md:bottom-0 relative ">
+                <span className="text-lg w-auto text-gray-500 ml-2 bottom-[3.5em] md:bottom-0 relative ">
                   Selected: {selectedFile.name}
                 </span>
               )}
