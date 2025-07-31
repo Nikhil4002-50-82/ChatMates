@@ -1,5 +1,4 @@
 import React from "react";
-import { FaPlay } from "react-icons/fa";
 
 const ChatMessage = ({ message, isSender, time, type, url }) => {
   const renderMedia = () => {
@@ -44,9 +43,9 @@ const ChatMessage = ({ message, isSender, time, type, url }) => {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-600 underline break-all mb-2"
+        className="underline break-all mb-2"
       >
-        Download file
+        View File
       </a>
     );
   };
