@@ -471,6 +471,73 @@ app.post("/verifyOtp", (req, res) => {
 });
 
 const upload = multer({ storage: multer.memoryStorage() });
+// app.post(
+//   "/uploadFile",
+//   authenticateAccessToken,
+//   upload.single("file"),
+//   async (req, res) => {
+//     try {
+//       const file = req.file;
+//       const { chatid } = req.body;
+//       const { userid } = req.user;
+
+//       if (!file || !chatid) {
+//         return res.status(400).json({ error: "File and chatid are required" });
+//       }
+
+//       const fileName = `${userid}/${Date.now()}-${file.originalname}`;
+
+//       const { error: uploadError } = await supabase.storage
+//         .from("media")
+//         .upload(fileName, file.buffer, {
+//           contentType: file.mimetype,
+//           upsert: true,
+//         });
+
+//       if (uploadError) {
+//         return res.status(500).json({ error: uploadError.message });
+//       }
+
+//       // ✅ FIXED: Get public URL properly
+//       const { data: publicUrlData, error: publicUrlError } = supabase.storage
+//         .from("media")
+//         .getPublicUrl(fileName);
+
+//       if (publicUrlError) {
+//         return res.status(500).json({ error: publicUrlError.message });
+//       }
+
+//       const publicURL = publicUrlData.publicUrl;
+
+//       const { error: insertError } = await supabase.from("messages").insert([
+//         {
+//           chatid,
+//           message: file.originalname,
+//           mediatype: file.mimetype,
+//           mediaurl: publicURL,
+//           senderid: userid,
+//         },
+//       ]);
+//       const { data: insertedMessages } = await supabase.from("messages").insert([ ... ]).select(); // .select() gets the inserted row(s)
+// if (insertedMessages?.[0]) {
+//   io.emit("receive_message", insertedMessages[0]);
+// }
+
+
+//       if (insertError) {
+//         return res.status(500).json({ error: insertError.message });
+//       }
+
+//       res.status(200).json({
+//         message: "File uploaded and message created successfully",
+//         publicUrl: publicURL,
+//       });
+//     } catch (err) {
+//       console.error("Upload Error:", err);
+//       res.status(500).json({ error: "Server error during file upload" });
+//     }
+//   }
+// );
 app.post(
   "/uploadFile",
   authenticateAccessToken,
@@ -487,6 +554,7 @@ app.post(
 
       const fileName = `${userid}/${Date.now()}-${file.originalname}`;
 
+      // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from("media")
         .upload(fileName, file.buffer, {
@@ -498,7 +566,7 @@ app.post(
         return res.status(500).json({ error: uploadError.message });
       }
 
-      // ✅ FIXED: Get public URL properly
+      // Get public URL of the uploaded file
       const { data: publicUrlData, error: publicUrlError } = supabase.storage
         .from("media")
         .getPublicUrl(fileName);
@@ -509,20 +577,90 @@ app.post(
 
       const publicURL = publicUrlData.publicUrl;
 
-      const { error: insertError } = await supabase.from("messages").insert([
-        {
-          chatid,
-          message: file.originalname,
-          mediatype: file.mimetype,
-          mediaurl: publicURL,
-          senderid: userid,
-        },
-      ]);
+      // Insert message into DB and return inserted row(s)
+      const { data: insertedMessages, error: insertError } = await supabase
+        .from("messages")
+        .insert([
+          {
+            chatid,
+            message: file.originalname,
+            mediatype: file.mimetype,
+            mediaurl: publicURL,
+            senderid: userid,
+          },
+        ])
+        .select();
 
       if (insertError) {
         return res.status(500).json({ error: insertError.message });
       }
 
+      // Emit socket event with inserted message (first/only)
+      if (insertedMessages && insertedMessages.length > 0) {
+        io.emit("receive_message", insertedMessages[0]);
+      }
+
+      res.status(200).json({
+        message: "File uploaded and message created successfully",
+        publicUrl: publicURL,
+      });
+    } catch (err) {
+      console.error("Upload Error:", err);
+      res.status(500).json({ error: "Server error during file upload" });
+    }
+  }
+);
+app.post(
+  "/uploadFile",
+  authenticateAccessToken,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const file = req.file;
+      const { chatid } = req.body;
+      const { userid } = req.user;
+      if (!file || !chatid) {
+        return res.status(400).json({ error: "File and chatid are required" });
+      }
+      const fileName = `${userid}/${Date.now()}-${file.originalname}`;
+      // Upload file to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from("media")
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+      if (uploadError) {
+        return res.status(500).json({ error: uploadError.message });
+      }
+      // Get public URL of the uploaded file
+      const { data: publicUrlData, error: publicUrlError } = supabase.storage
+        .from("media")
+        .getPublicUrl(fileName);
+      if (publicUrlError) {
+        return res.status(500).json({ error: publicUrlError.message });
+      }
+      const publicURL = publicUrlData.publicUrl;
+      // Insert message into DB and return inserted row(s)
+      const { data: insertedMessages, error: insertError } = await supabase
+        .from("messages")
+        .insert([
+          {
+            chatid,
+            message: file.originalname,
+            mediatype: file.mimetype,
+            mediaurl: publicURL,
+            senderid: userid,
+          },
+        ])
+        .select();
+      if (insertError) {
+        return res.status(500).json({ error: insertError.message });
+      }
+      // Emit socket event with inserted message (first/only)
+      if (insertedMessages && insertedMessages.length > 0) {
+        io.emit("receive_message", insertedMessages[0]);
+      }
       res.status(200).json({
         message: "File uploaded and message created successfully",
         publicUrl: publicURL,

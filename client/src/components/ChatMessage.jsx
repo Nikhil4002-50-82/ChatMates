@@ -11,7 +11,7 @@ const ChatMessage = ({ message, isSender, time, type, url }) => {
           alt="media"
           crossOrigin="anonymous"
           onError={() => console.error("Failed to load image", url)}
-          className="w-[50%] h-auto object-cover rounded-xl mb-2"
+          className="w-[70%] h-auto object-cover rounded-xl mb-2"
         />
       );
     }

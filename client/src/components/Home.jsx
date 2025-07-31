@@ -25,6 +25,7 @@ const Home = () => {
   const { userData, setUserData } = useContext(userDataContext);
 
   const [messages, setMessages] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]); // instead of single file
   const [messageText, setMessageText] = useState("");
   const [chatUsers, setChatUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -206,63 +207,105 @@ const Home = () => {
     }
   }, [userData]);
 
+  // const sendMessage = async () => {
+  //   if (!activeChatId) return;
+  //   if (selectedFile) {
+  //     // Only upload (don't socket emit)
+  //     const formData = new FormData();
+  //     formData.append("file", selectedFile);
+  //     formData.append("chatid", activeChatId);
+  //     formData.append("mediatype", selectedFile.type);
+  //     try {
+  //       const res = await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
+  //         withCredentials: true,
+  //       });
+  //       toast.success("Uploaded!");
+  //     } catch (error) {
+  //       toast.error("File upload failed");
+  //     }
+  //     setSelectedFile(null);
+  //     setMessageText("");
+  //     return; // don't emit socket!
+  //   }
+  //   if (!messageText.trim()) return;
+  //   const newMsg = {
+  //     message: messageText,
+  //     chatid: activeChatId,
+  //     senderid: userData.userid,
+  //   };
+  //   socket.emit("send_message", newMsg);
+  //   setMessageText("");
+  // }
+
   const sendMessage = async () => {
     if (!activeChatId) return;
-    let fileUrl = null;
-    let fileType = null;
-    if (selectedFile) {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("chatid", activeChatId);
-      formData.append("mediatype", selectedFile.type);
+
+    // If files selected - upload each file and send as individual messages
+    if (selectedFiles.length > 0) {
       try {
-        const res = await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
-          withCredentials: true,
-        });
-        fileUrl = res.data.publicUrl;
-        fileType = selectedFile.type;
-        toast.success("Uploaded!");
+        for (const file of selectedFiles) {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("chatid", activeChatId);
+          formData.append("mediatype", file.type);
+
+          const res = await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
+            withCredentials: true,
+          });
+          toast.success(`Uploaded ${file.name}!`);
+
+          // No need to emit socket here (backend emits)
+        }
       } catch (error) {
-        toast.error("File upload failed");
-        return;
+        toast.error("One or more file uploads failed");
+        // You can choose to stop or continue uploading remaining files on failure
       }
+      setSelectedFiles([]);
+      setMessageText("");
+      return; // Important to return to avoid sending any text message here
     }
-    if (!messageText.trim() && !fileUrl) return;
+
+    // If message text only
+    if (!messageText.trim()) return;
+
     const newMsg = {
-      message: messageText || selectedFile?.name || "",
+      message: messageText,
       chatid: activeChatId,
       senderid: userData.userid,
-      mediatype: fileType,
-      mediaurl: fileUrl,
     };
     socket.emit("send_message", newMsg);
     setMessageText("");
-    setSelectedFile(null); // clear file
   };
 
   useEffect(() => {
+    // Remove any previous listeners to prevent duplicates
+    socket.off("receive_message");
+
     socket.on("receive_message", (msg) => {
+      // Only add new messages from the current chat
       if (msg.chatid === activeChatId) {
         setMessages((prev) => [...prev, msg]);
       }
     });
+
     return () => {
       socket.off("receive_message");
     };
   }, [activeChatId]);
+
   useEffect(() => {
     if (userData?.userid) {
       socket.emit("user-connected", userData.userid);
     }
   }, [userData]);
-  useEffect(() => {
-    socket.on("receive_message", (data) => {
-      setMessages((prev) => [...prev, data]);
-    });
-    return () => {
-      socket.off("receive_message");
-    };
-  }, []);
+  // useEffect(() => {
+  //   socket.on("receive_message", (data) => {
+  //     setMessages((prev) => [...prev, data]);
+  //   });
+  //   return () => {
+  //     socket.off("receive_message");
+  //   };
+  // }, []);
 
   if (loggedIn === null) {
     return <Loader />;
@@ -395,30 +438,55 @@ const Home = () => {
               </div>
             )}
             {/* Fixed Input Bar */}
-            {selectedFile && (
-                <span className="text-lg w-auto text-gray-500 ml-2 bottom-[3.5em] md:bottom-0 relative ">
-                  Selected: {selectedFile.name}
-                </span>
-              )}
+            {/* {selectedFiles.length > 0 && (
+              <div className="text-gray-500 ml-2">
+                Selected files: {selectedFiles.map((f) => f.name).join(", ")}
+              </div>
+            )} */}
+            {selectedFiles.length > 0 && (
+              <div className="text-gray-500 ml-2 flex flex-wrap gap-2">
+                {selectedFiles.map((file, index) => (
+                  <div
+                    key={file.name + index}
+                    className="flex items-center bg-gray-200 rounded p-1 px-2 text-sm"
+                  >
+                    <span>{file.name}</span>
+                    <button
+                      onClick={() => {
+                        setSelectedFiles((prev) =>
+                          prev.filter((_, i) => i !== index)
+                        );
+                      }}
+                      className="ml-2 text-custom1 font-bold text-2xl"
+                      type="button"
+                      aria-label={`Remove file ${file.name}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div
               className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center 
              sm:relative fixed bottom-0 left-0 right-0 z-50"
             >
-              
               <input
                 type="file"
                 id="fileUpload"
                 className="hidden"
+                multiple
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  setSelectedFile(file);
+                  const files = e.target.files;
+                  setSelectedFiles(files ? Array.from(files) : []);
                 }}
               />
 
               <label htmlFor="fileUpload" className="cursor-pointer">
                 <IoCloudUploadSharp className="text-custom1 text-3xl sm:text-4xl mr-2 sm:mr-3" />
               </label>
-              
+
               <input
                 type="text"
                 className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
