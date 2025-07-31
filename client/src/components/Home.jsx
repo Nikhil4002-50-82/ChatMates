@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 import socket from "../socket";
 import ChatMessage from "./ChatMessage";
@@ -10,10 +11,10 @@ import Loader from "./Loader";
 import Spinner from "./Spinner";
 
 import { FaUserTie } from "react-icons/fa";
-import { IoCall ,IoCloudUploadSharp} from "react-icons/io5";
+import { IoCall, IoCloudUploadSharp } from "react-icons/io5";
 import { BsMicFill } from "react-icons/bs";
 import { IoIosSend } from "react-icons/io";
-import { RiMenuSearchFill,RiFileUploadFill  } from "react-icons/ri";
+import { RiMenuSearchFill, RiFileUploadFill } from "react-icons/ri";
 
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
 
@@ -30,6 +31,7 @@ const Home = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(300);
@@ -41,13 +43,17 @@ const Home = () => {
   const menuButtonRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [loadingChat, setLoadingChat] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+  useEffect(() => {
+    if (!loadingChat && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+    }
+  }, [loadingChat]);
 
   const handleSelectChat = async (user) => {
     setLoadingChat(true);
@@ -200,17 +206,41 @@ const Home = () => {
     }
   }, [userData]);
 
-  const sendMessage = () => {
-    if (!messageText.trim() || !activeChatId) return;
-    const msg = {
-      message: messageText,
+  const sendMessage = async () => {
+    if (!activeChatId) return;
+    let fileUrl = null;
+    let fileType = null;
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("chatid", activeChatId);
+      formData.append("mediatype", selectedFile.type);
+      try {
+        const res = await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
+          withCredentials: true,
+        });
+        fileUrl = res.data.publicUrl;
+        fileType = selectedFile.type;
+        toast.success("Uploaded!");
+      } catch (error) {
+        toast.error("File upload failed");
+        return;
+      }
+    }
+    // Prevent sending empty message unless file is attached
+    if (!messageText.trim() && !fileUrl) return;
+    const newMsg = {
+      message: messageText || selectedFile?.name || "",
       chatid: activeChatId,
       senderid: userData.userid,
+      mediatype: fileType,
+      mediaurl: fileUrl,
     };
-    // Emit via socket instead of Axios
-    socket.emit("send_message", msg);
-    setMessageText(""); // Clear input
+    socket.emit("send_message", newMsg);
+    setMessageText("");
+    setSelectedFile(null); // clear file
   };
+
   useEffect(() => {
     socket.on("receive_message", (msg) => {
       // Only show messages for current chat
@@ -248,6 +278,31 @@ const Home = () => {
   if (!userData || !userData.name) {
     return <Loader />;
   }
+
+  const uploadFile = async (file, chatid, mediatype) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("chatid", chatid);
+    formData.append("mediatype", mediatype);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
+        withCredentials: true,
+      });
+      toast.success("Uploaded!");
+
+      const newMsg = {
+        message: file.name,
+        chatid,
+        senderid: userData.userid,
+        mediatype,
+        mediaurl: res.data.publicUrl,
+      };
+
+      setMessages((prev) => [...prev, newMsg]);
+    } catch (error) {
+      toast.error(error.response?.data?.error || error.message);
+    }
+  };
 
   return (
     <div
@@ -349,7 +404,7 @@ const Home = () => {
           {/* Chat Content Area */}
           <div className="flex h-[84dvh] md:h-[77dvh] flex-col bg-[#f0f2f5]">
             {/* Scrollable Messages */}
-            {loadingChat || loading ? (
+            {loadingChat ? (
               <Spinner />
             ) : (
               <div className=" overflow-y-auto min-h-[93%] md:min-h-[82%] scrollbar-hide px-3 sm:px-5 py-3 sm:py-5">
@@ -359,6 +414,8 @@ const Home = () => {
                     message={msg.message}
                     isSender={msg.senderid === userData.userid}
                     time={formatTime(msg.timestamp)}
+                    type={msg.mediatype}
+                    url={msg.mediaurl}
                   />
                 ))}
                 <div ref={messagesEndRef}></div>
@@ -370,8 +427,24 @@ const Home = () => {
               className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center 
              sm:relative fixed bottom-0 left-0 right-0 z-50"
             >
-              <input type="file" id="fileUpload" className="hidden" />
-              <label htmlFor="fileUpload" className="cursor-pointer"><IoCloudUploadSharp className="text-custom1 text-3xl sm:text-4xl mr-2 sm:mr-3"/></label>
+              <input
+                type="file"
+                id="fileUpload"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  setSelectedFile(file);
+                }}
+              />
+
+              <label htmlFor="fileUpload" className="cursor-pointer">
+                <IoCloudUploadSharp className="text-custom1 text-3xl sm:text-4xl mr-2 sm:mr-3" />
+              </label>
+              {selectedFile && (
+                <div className="text-sm text-gray-500 ml-2">
+                  Selected: {selectedFile.name}
+                </div>
+              )}
               <input
                 type="text"
                 className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"

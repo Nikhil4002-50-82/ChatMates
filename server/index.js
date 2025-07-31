@@ -10,6 +10,7 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 import supabase from "./utils/supabase.js";
 import nodemailer from "nodemailer";
+import multer from "multer";
 
 dotenv.config();
 
@@ -45,15 +46,21 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
   socket.on("send_message", async (messageData) => {
-    const { senderid, chatid, message } = messageData;
+    const { senderid, chatid, message, mediatype, mediaurl } = messageData;
     const { data, error } = await supabase
       .from("messages")
-      .insert([{ chatid, senderid, message }])
+      .insert([{
+        chatid,
+        senderid,
+        message,
+        mediatype: mediatype || null,  // ✅ Add media type
+        mediaurl: mediaurl || null     // ✅ Add media url
+      }])
       .select();
     if (!error && data?.length > 0) {
       io.emit("receive_message", {
         ...data[0],
-        created_at: new Date().toISOString(),
+        created_at: new Date().toISOString(), // optional, DB might return this
       });
     } else if (error) {
       console.error("Supabase insert error:", error);
@@ -61,10 +68,12 @@ io.on("connection", (socket) => {
       console.warn("No data returned from insert.");
     }
   });
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
 });
+
 
 app.use(
   cors({
@@ -364,7 +373,7 @@ app.get("/messages/:chatid", authenticateAccessToken, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("messages")
-      .select("messageid, chatid, senderid, message, timestamp")
+      .select("messageid, chatid, senderid, message, timestamp,mediatype,mediaurl")
       .eq("chatid", chatid)
       .order("timestamp", { ascending: true });
     if (error) {
@@ -377,6 +386,8 @@ app.get("/messages/:chatid", authenticateAccessToken, async (req, res) => {
       senderid: msg.senderid,
       message: msg.message,
       timestamp: msg.timestamp,
+      mediatype:msg.mediatype,
+      mediaurl:msg.mediaurl
     }));
     res.status(200).json(formattedMessages);
   } catch (err) {
@@ -458,6 +469,71 @@ app.post("/verifyOtp", (req, res) => {
   otpStore.delete(email);
   return res.json({ success: true, message: "OTP verified" });
 });
+
+const upload = multer({ storage: multer.memoryStorage() });
+app.post(
+  "/uploadFile",
+  authenticateAccessToken,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const file = req.file;
+      const { chatid } = req.body;
+      const { userid } = req.user;
+
+      if (!file || !chatid) {
+        return res.status(400).json({ error: "File and chatid are required" });
+      }
+
+      const fileName = `${userid}/${Date.now()}-${file.originalname}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("media")
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        return res.status(500).json({ error: uploadError.message });
+      }
+
+      // ✅ FIXED: Get public URL properly
+      const { data: publicUrlData, error: publicUrlError } = supabase.storage
+        .from("media")
+        .getPublicUrl(fileName);
+
+      if (publicUrlError) {
+        return res.status(500).json({ error: publicUrlError.message });
+      }
+
+      const publicURL = publicUrlData.publicUrl;
+
+      const { error: insertError } = await supabase.from("messages").insert([
+        {
+          chatid,
+          message: file.originalname,
+          mediatype: file.mimetype,
+          mediaurl: publicURL,
+          senderid: userid,
+        },
+      ]);
+
+      if (insertError) {
+        return res.status(500).json({ error: insertError.message });
+      }
+
+      res.status(200).json({
+        message: "File uploaded and message created successfully",
+        publicUrl: publicURL,
+      });
+    } catch (err) {
+      console.error("Upload Error:", err);
+      res.status(500).json({ error: "Server error during file upload" });
+    }
+  }
+);
+
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}.`);
