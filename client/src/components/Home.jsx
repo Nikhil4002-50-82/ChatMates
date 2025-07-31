@@ -14,7 +14,7 @@ import { FaUserTie } from "react-icons/fa";
 import { IoCall, IoCloudUploadSharp } from "react-icons/io5";
 import { BsMicFill } from "react-icons/bs";
 import { IoIosSend } from "react-icons/io";
-import { RiMenuSearchFill, RiFileUploadFill } from "react-icons/ri";
+import { RiMenuSearchFill } from "react-icons/ri";
 
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
 
@@ -32,7 +32,6 @@ const Home = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(300);
@@ -122,11 +121,9 @@ const Home = () => {
         }
       );
       const { chatid } = response.data;
-      // Check if user already exists in UI
       const alreadyPresent = chatUsers.some((u) => u.userid === otherUserId);
       let userToSelect;
       if (!alreadyPresent) {
-        // Get user details from backend
         const res = await axios.get(`${API_BASE_URL}/getUser/${otherUserId}`, {
           withCredentials: true,
         });
@@ -134,14 +131,12 @@ const Home = () => {
         setChatUsers((prev) => [...prev, newUser]);
         userToSelect = newUser;
       } else {
-        // Add chatid to existing user if missing
         userToSelect = chatUsers.find((u) => u.userid === otherUserId);
         if (!userToSelect.chatid) userToSelect.chatid = chatid;
       }
       setSearchQuery("");
       toggleSidebar();
       setSearchResults([]);
-      // Open chat
       setActiveChatId(chatid);
       setSelectedUser(userToSelect);
     } catch (err) {
@@ -207,40 +202,8 @@ const Home = () => {
     }
   }, [userData]);
 
-  // const sendMessage = async () => {
-  //   if (!activeChatId) return;
-  //   if (selectedFile) {
-  //     // Only upload (don't socket emit)
-  //     const formData = new FormData();
-  //     formData.append("file", selectedFile);
-  //     formData.append("chatid", activeChatId);
-  //     formData.append("mediatype", selectedFile.type);
-  //     try {
-  //       const res = await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
-  //         withCredentials: true,
-  //       });
-  //       toast.success("Uploaded!");
-  //     } catch (error) {
-  //       toast.error("File upload failed");
-  //     }
-  //     setSelectedFile(null);
-  //     setMessageText("");
-  //     return; // don't emit socket!
-  //   }
-  //   if (!messageText.trim()) return;
-  //   const newMsg = {
-  //     message: messageText,
-  //     chatid: activeChatId,
-  //     senderid: userData.userid,
-  //   };
-  //   socket.emit("send_message", newMsg);
-  //   setMessageText("");
-  // }
-
   const sendMessage = async () => {
     if (!activeChatId) return;
-
-    // If files selected - upload each file and send as individual messages
     if (selectedFiles.length > 0) {
       try {
         for (const file of selectedFiles) {
@@ -248,26 +211,19 @@ const Home = () => {
           formData.append("file", file);
           formData.append("chatid", activeChatId);
           formData.append("mediatype", file.type);
-
           const res = await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
             withCredentials: true,
           });
           toast.success(`Uploaded ${file.name}!`);
-
-          // No need to emit socket here (backend emits)
         }
       } catch (error) {
         toast.error("One or more file uploads failed");
-        // You can choose to stop or continue uploading remaining files on failure
       }
       setSelectedFiles([]);
       setMessageText("");
-      return; // Important to return to avoid sending any text message here
+      return;
     }
-
-    // If message text only
     if (!messageText.trim()) return;
-
     const newMsg = {
       message: messageText,
       chatid: activeChatId,
@@ -278,34 +234,21 @@ const Home = () => {
   };
 
   useEffect(() => {
-    // Remove any previous listeners to prevent duplicates
     socket.off("receive_message");
-
     socket.on("receive_message", (msg) => {
-      // Only add new messages from the current chat
       if (msg.chatid === activeChatId) {
         setMessages((prev) => [...prev, msg]);
       }
     });
-
     return () => {
       socket.off("receive_message");
     };
   }, [activeChatId]);
-
   useEffect(() => {
     if (userData?.userid) {
       socket.emit("user-connected", userData.userid);
     }
   }, [userData]);
-  // useEffect(() => {
-  //   socket.on("receive_message", (data) => {
-  //     setMessages((prev) => [...prev, data]);
-  //   });
-  //   return () => {
-  //     socket.off("receive_message");
-  //   };
-  // }, []);
 
   if (loggedIn === null) {
     return <Loader />;
@@ -438,11 +381,6 @@ const Home = () => {
               </div>
             )}
             {/* Fixed Input Bar */}
-            {/* {selectedFiles.length > 0 && (
-              <div className="text-gray-500 ml-2">
-                Selected files: {selectedFiles.map((f) => f.name).join(", ")}
-              </div>
-            )} */}
             {selectedFiles.length > 0 && (
               <div className="text-gray-500 ml-2 flex flex-wrap gap-2">
                 {selectedFiles.map((file, index) => (
