@@ -11,10 +11,11 @@ import Loader from "./Loader";
 import Spinner from "./Spinner";
 
 import { FaUserTie } from "react-icons/fa";
-import { IoCall, IoCloudUploadSharp } from "react-icons/io5";
+import { IoCall, IoCloudUploadSharp  } from "react-icons/io5";
 import { BsMicFill } from "react-icons/bs";
 import { IoIosSend } from "react-icons/io";
 import { RiMenuSearchFill } from "react-icons/ri";
+import { MdAdminPanelSettings } from "react-icons/md";
 
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
 
@@ -284,9 +285,12 @@ const Home = () => {
             maxWidth: "600px",
           }}
         >
-          <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-6 py-4 flex items-center">
-            <FaUserTie className="text-2xl sm:text-3xl mr-2" />
-            <h2 className="text-xl sm:text-2xl">{userData.name}</h2>
+          <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 sm:px-6 py-4">
+            <div className=" flex items-center">
+              <FaUserTie className="text-4xl mr-2" />
+              <h2 className="text-xl sm:text-2xl">{userData.name}</h2>
+            </div>
+            <div><MdAdminPanelSettings className="text-4xl"/></div>
           </div>
           <div className="border-b border-[#e0e0e0] px-3 py-2">
             <input
@@ -306,7 +310,7 @@ const Home = () => {
                       key={user.userid}
                       className="flex items-center px-3 sm:px-5 py-3 cursor-pointer hover:bg-[#f5f5f5]"
                     >
-                      <FaUserTie className="text-3xl sm:text-4xl mr-3 sm:mr-4" />
+                      <FaUserTie className="text-4xl mr-3 sm:mr-4" />
                       <div className="flex-1">
                         <h3 className="text-base sm:text-lg">{user.name}</h3>
                         <p className="text-xs sm:text-sm text-[#666]">
@@ -350,7 +354,7 @@ const Home = () => {
               >
                 <RiMenuSearchFill className="text-4xl mr-1" />
               </button>
-              <FaUserTie className="text-2xl sm:text-3xl mr-2" />
+              <FaUserTie className="text-4xl mr-2" />
               <h2 className="text-xl sm:text-2xl">
                 {selectedUser ? selectedUser.name : "Select a chat"}
               </h2>
