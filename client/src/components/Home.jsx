@@ -227,7 +227,6 @@ const Home = () => {
         return;
       }
     }
-    // Prevent sending empty message unless file is attached
     if (!messageText.trim() && !fileUrl) return;
     const newMsg = {
       message: messageText || selectedFile?.name || "",
@@ -243,7 +242,6 @@ const Home = () => {
 
   useEffect(() => {
     socket.on("receive_message", (msg) => {
-      // Only show messages for current chat
       if (msg.chatid === activeChatId) {
         setMessages((prev) => [...prev, msg]);
       }
@@ -274,35 +272,9 @@ const Home = () => {
     return <Auth />;
   }
 
-  // Optional: Wait for userData only if you're logged in
   if (!userData || !userData.name) {
     return <Loader />;
   }
-
-  const uploadFile = async (file, chatid, mediatype) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("chatid", chatid);
-    formData.append("mediatype", mediatype);
-    try {
-      const res = await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
-        withCredentials: true,
-      });
-      toast.success("Uploaded!");
-
-      const newMsg = {
-        message: file.name,
-        chatid,
-        senderid: userData.userid,
-        mediatype,
-        mediaurl: res.data.publicUrl,
-      };
-
-      setMessages((prev) => [...prev, newMsg]);
-    } catch (error) {
-      toast.error(error.response?.data?.error || error.message);
-    }
-  };
 
   return (
     <div
@@ -423,10 +395,16 @@ const Home = () => {
               </div>
             )}
             {/* Fixed Input Bar */}
+            {selectedFile && (
+                <span className="text-lg w-auto text-gray-500 ml-2 bottom-[3.2em] md:bottom-0 relative ">
+                  Selected: {selectedFile.name}
+                </span>
+              )}
             <div
               className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center 
              sm:relative fixed bottom-0 left-0 right-0 z-50"
             >
+              
               <input
                 type="file"
                 id="fileUpload"
@@ -440,11 +418,7 @@ const Home = () => {
               <label htmlFor="fileUpload" className="cursor-pointer">
                 <IoCloudUploadSharp className="text-custom1 text-3xl sm:text-4xl mr-2 sm:mr-3" />
               </label>
-              {selectedFile && (
-                <div className="text-sm text-gray-500 ml-2">
-                  Selected: {selectedFile.name}
-                </div>
-              )}
+              
               <input
                 type="text"
                 className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
