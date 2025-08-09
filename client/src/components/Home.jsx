@@ -11,7 +11,7 @@ import Loader from "./Loader";
 import Spinner from "./Spinner";
 
 import { FaUserTie } from "react-icons/fa";
-import { IoCall, IoCloudUploadSharp  } from "react-icons/io5";
+import { IoCall, IoCloudUploadSharp } from "react-icons/io5";
 import { BsMicFill } from "react-icons/bs";
 import { IoIosSend } from "react-icons/io";
 import { RiMenuSearchFill } from "react-icons/ri";
@@ -44,6 +44,7 @@ const Home = () => {
   const menuButtonRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [loadingChat, setLoadingChat] = useState(false);
+  const [setting, setSetting] = useState(false);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -285,12 +286,14 @@ const Home = () => {
             maxWidth: "600px",
           }}
         >
-          <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 py-1 sm:px-4 sm:py-2">
             <div className=" flex items-center">
               <FaUserTie className="text-3xl mr-2" />
               <h2 className="text-lg sm:text-2xl">{userData.name}</h2>
             </div>
-            <div><MdAdminPanelSettings className="text-4xl"/></div>
+            <div>
+              <MdAdminPanelSettings className="text-5xl" />
+            </div>
           </div>
           <div className="border-b border-[#e0e0e0] px-3 py-2">
             <input
@@ -321,7 +324,7 @@ const Home = () => {
                         className="bg-custom1 w-20 h-9  text-white px-1 sm:px-2 py-1 sm:py-2 rounded-lg text-md sm:text-lg flex items-center justify-center"
                         onClick={() => handleStartChat(user.userid)}
                       >
-                        <span className="text-sm" >Start Chat</span>
+                        <span className="text-sm">Start Chat</span>
                       </button>
                     </div>
                   ))
@@ -356,7 +359,7 @@ const Home = () => {
               </button>
               <FaUserTie className="text-3xl mr-2" />
               <h2 className="text-lg sm:text-2xl">
-                {selectedUser ? selectedUser.name : "Settings"}
+                {selectedUser ? selectedUser.name : "Start Chat"}
               </h2>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">

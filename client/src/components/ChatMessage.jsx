@@ -62,7 +62,7 @@ const ChatMessage = ({ message, isSender, time, type, url }) => {
       {message && <p className="text-xl mb-3">{message}</p>}
 
       <small
-        className={`text-lg absolute bottom-1 right-2 ${
+        className={`text-md font-thin absolute bottom-1 right-2 ${
           isSender ? "text-white" : "text-black"
         }`}
       >

@@ -6,8 +6,10 @@ import { Bounce, ToastContainer } from "react-toastify";
 import Home from "./components/Home";
 import Auth from "./components/Auth";
 import Loader from "./components/Loader";
+import Settings from "./components/Settings";
 
 import { LoggedInContext, userDataContext } from "./context/LoginContext";
+
 
 const App = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -78,6 +80,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </BrowserRouter>
           <ToastContainer
