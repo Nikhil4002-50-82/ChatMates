@@ -53,14 +53,14 @@ io.on("connection", (socket) => {
         chatid,
         senderid,
         message,
-        mediatype: mediatype || null,  // ✅ Add media type
-        mediaurl: mediaurl || null     // ✅ Add media url
+        mediatype: mediatype || null,
+        mediaurl: mediaurl || null  
       }])
       .select();
     if (!error && data?.length > 0) {
       io.emit("receive_message", {
         ...data[0],
-        created_at: new Date().toISOString(), // optional, DB might return this
+        created_at: new Date().toISOString(), 
       });
     } else if (error) {
       console.error("Supabase insert error:", error);
@@ -240,7 +240,6 @@ app.post("/logout", (req, res) => {
 
 app.get("/profile", authenticateAccessToken, async (req, res) => {
   try {
-    // Optionally fetch fresh user data from DB if needed
     const { userid } = req.user;
     const { data, error } = await supabase
       .from("users")
@@ -263,7 +262,6 @@ app.get("/profile", authenticateAccessToken, async (req, res) => {
 
 app.get("/chattedUsers/:userid", authenticateAccessToken, async (req, res) => {
   const { userid } = req.params;
-  // Step 1: Get all chat IDs the user is a member of
   const { data: chatMemberships, error } = await supabase
     .from("chatmembers")
     .select("chatid")
@@ -271,14 +269,12 @@ app.get("/chattedUsers/:userid", authenticateAccessToken, async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   const chatIds = chatMemberships.map((i) => i.chatid);
   if (chatIds.length === 0) return res.json([]);
-  // Step 2: Get other users in those chats (excluding self)
   const { data: users, error: userError } = await supabase
     .from("chatmembers")
     .select("chatid, userid, users(name)")
     .in("chatid", chatIds)
     .neq("userid", userid);
   if (userError) return res.status(500).json({ error: userError.message });
-  // Step 3: Remove duplicates
   const uniqueUsers = Array.from(
     new Map(
       users.map((i) => [
@@ -296,7 +292,7 @@ app.get("/searchUsers", authenticateAccessToken, async (req, res) => {
     .from("users")
     .select("userid, name")
     .ilike("name", `%${q}%`)
-    .neq("userid", userid) // don't return self
+    .neq("userid", userid) 
     .limit(10);
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
@@ -305,26 +301,22 @@ app.get("/searchUsers", authenticateAccessToken, async (req, res) => {
 app.post("/startChat", authenticateAccessToken, async (req, res) => {
   const { user1, user2 } = req.body;
   try {
-    // Get chatids where user1 is a member
     const { data: user1Memberships, error: user1Error } = await supabase
       .from("chatmembers")
       .select("chatid")
       .eq("userid", user1);
     if (user1Error) throw user1Error;
     const user1ChatIds = (user1Memberships || []).map((m) => m.chatid);
-    // Get chatids where user2 is a member
     const { data: user2Memberships, error: user2Error } = await supabase
       .from("chatmembers")
       .select("chatid")
       .eq("userid", user2);
     if (user2Error) throw user2Error;
     const user2ChatIds = (user2Memberships || []).map((m) => m.chatid);
-    // Find common chat
     const commonChatId = user1ChatIds.find((id) => user2ChatIds.includes(id));
     if (commonChatId) {
       return res.json({ chatid: commonChatId });
     }
-    // No existing chat found — create new chat
     const { data: newChat, error: chatInsertError } = await supabase
       .from("chats")
       .insert([{ isgroup: false, created_by: user1 }])
@@ -332,7 +324,6 @@ app.post("/startChat", authenticateAccessToken, async (req, res) => {
       .single();
     if (chatInsertError) throw chatInsertError;
     const chatid = newChat.chatid;
-    // Add both users to chatmembers
     const { error: memberInsertError } = await supabase
       .from("chatmembers")
       .insert([
@@ -340,7 +331,6 @@ app.post("/startChat", authenticateAccessToken, async (req, res) => {
         { chatid, userid: user2 },
       ]);
     if (memberInsertError) throw memberInsertError;
-    // Optional: get the other user's name
     const { data: otherUser, error: userFetchError } = await supabase
       .from("users")
       .select("name")
@@ -358,7 +348,7 @@ app.get("/getUser/:id", authenticateAccessToken, async (req, res) => {
   const { id } = req.params;
   const { data, error } = await supabase
     .from("users")
-    .select("userid, name, email") // Add any other fields you need
+    .select("userid, name, email")
     .eq("userid", id)
     .single();
   if (error) {
@@ -439,7 +429,7 @@ const transporter = nodemailer.createTransport({
 app.post("/sendOtp", async (req, res) => {
   const { email } = req.body;
   const otp = generateOTP();
-  const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+  const expiry = Date.now() + 5 * 60 * 1000; 
   otpStore.set(email, { otp, expiry });
   try {
     await transporter.sendMail({
@@ -528,7 +518,6 @@ app.post(
     }
   }
 );
-
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}.`);

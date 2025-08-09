@@ -18,6 +18,7 @@ import { RiMenuSearchFill } from "react-icons/ri";
 import { MdAdminPanelSettings } from "react-icons/md";
 
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
+import Settings from "./Settings";
 
 const Home = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -292,7 +293,12 @@ const Home = () => {
               <h2 className="text-lg sm:text-2xl">{userData.name}</h2>
             </div>
             <div>
-              <MdAdminPanelSettings className="text-5xl" />
+              <MdAdminPanelSettings
+                className="text-5xl"
+                onClick={() => {
+                  setSetting((prev) => !prev);
+                }}
+              />
             </div>
           </div>
           <div className="border-b border-[#e0e0e0] px-3 py-2">
@@ -346,121 +352,124 @@ const Home = () => {
           className="hidden sm:block w-1 bg-[#e0e0e0] cursor-col-resize hover:bg-custom1 transition-colors"
           onMouseDown={handleMouseDown}
         ></div>
-        {/* Chat Area */}
-        <div className="flex flex-col flex-1">
-          <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <button
-                ref={menuButtonRef}
-                className="sm:hidden mr-2 text-2xl"
-                onClick={toggleSidebar}
-              >
-                <RiMenuSearchFill className="text-4xl mr-1" />
-              </button>
-              <FaUserTie className="text-3xl mr-2" />
-              <h2 className="text-lg sm:text-2xl">
-                {selectedUser ? selectedUser.name : "Start Chat"}
-              </h2>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <IoCall className="text-2xl sm:text-3xl cursor-pointer" />
-            </div>
-          </div>
-          {/* Chat Content Area */}
-          <div className="flex h-[84dvh] md:h-[77dvh] flex-col bg-[#f0f2f5]">
-            {/* Scrollable Messages */}
-            {loadingChat ? (
-              <Spinner />
-            ) : (
-              <div className=" overflow-y-auto min-h-[93%] md:min-h-[82%] scrollbar-hide px-3 sm:px-5 py-3 sm:py-5">
-                {messages.map((msg, index) => (
-                  <ChatMessage
-                    key={msg.messageid}
-                    message={msg.message}
-                    isSender={msg.senderid === userData.userid}
-                    time={formatTime(msg.timestamp)}
-                    type={msg.mediatype}
-                    url={msg.mediaurl}
-                  />
-                ))}
-                <div ref={messagesEndRef}></div>
-                <div className="h-16 sm:hidden" />
+        {setting ? (
+          <Settings onClick={toggleSidebar}/>
+        ) : (
+          <div className="flex flex-col flex-1">
+            <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <button
+                  ref={menuButtonRef}
+                  className="sm:hidden mr-2 text-2xl"
+                  onClick={toggleSidebar}
+                >
+                  <RiMenuSearchFill className="text-4xl mr-1" />
+                </button>
+                <FaUserTie className="text-3xl mr-2" />
+                <h2 className="text-lg sm:text-2xl">
+                  {selectedUser ? selectedUser.name : "Start Chat"}
+                </h2>
               </div>
-            )}
-            {/* Fixed Input Bar */}
-            {selectedFiles.length > 0 && (
-              <div className="text-gray-500 ml-2 flex flex-wrap gap-2">
-                {selectedFiles.map((file, index) => (
-                  <div
-                    key={file.name + index}
-                    className="flex items-center bg-gray-200 rounded p-1 px-2 text-sm"
-                  >
-                    <span>{file.name}</span>
-                    <button
-                      onClick={() => {
-                        setSelectedFiles((prev) =>
-                          prev.filter((_, i) => i !== index)
-                        );
-                      }}
-                      className="ml-2 text-custom1 font-bold text-2xl"
-                      type="button"
-                      aria-label={`Remove file ${file.name}`}
+              <div className="flex items-center gap-2 sm:gap-4">
+                <IoCall className="text-2xl sm:text-3xl cursor-pointer" />
+              </div>
+            </div>
+            {/* Chat Content Area */}
+            <div className="flex h-[84dvh] md:h-[77dvh] flex-col bg-[#f0f2f5]">
+              {/* Scrollable Messages */}
+              {loadingChat ? (
+                <Spinner />
+              ) : (
+                <div className=" overflow-y-auto min-h-[93%] md:min-h-[82%] scrollbar-hide px-3 sm:px-5 py-3 sm:py-5">
+                  {messages.map((msg, index) => (
+                    <ChatMessage
+                      key={msg.messageid}
+                      message={msg.message}
+                      isSender={msg.senderid === userData.userid}
+                      time={formatTime(msg.timestamp)}
+                      type={msg.mediatype}
+                      url={msg.mediaurl}
+                    />
+                  ))}
+                  <div ref={messagesEndRef}></div>
+                  <div className="h-16 sm:hidden" />
+                </div>
+              )}
+              {/* Fixed Input Bar */}
+              {selectedFiles.length > 0 && (
+                <div className="text-gray-500 ml-2 flex flex-wrap gap-2">
+                  {selectedFiles.map((file, index) => (
+                    <div
+                      key={file.name + index}
+                      className="flex items-center bg-gray-200 rounded p-1 px-2 text-sm"
                     >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <span>{file.name}</span>
+                      <button
+                        onClick={() => {
+                          setSelectedFiles((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                        }}
+                        className="ml-2 text-custom1 font-bold text-2xl"
+                        type="button"
+                        aria-label={`Remove file ${file.name}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            <div
-              className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center 
+              <div
+                className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center 
              sm:relative fixed bottom-0 left-0 right-0 z-50"
-            >
-              <input
-                type="file"
-                id="fileUpload"
-                className="hidden"
-                multiple
-                onChange={(e) => {
-                  const files = e.target.files;
-                  setSelectedFiles(files ? Array.from(files) : []);
-                }}
-              />
-
-              <label htmlFor="fileUpload" className="cursor-pointer">
-                <IoCloudUploadSharp className="text-custom1 text-3xl sm:text-4xl mr-2 sm:mr-3" />
-              </label>
-
-              <input
-                type="text"
-                className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
-                placeholder="Send a message..."
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-              />
-              <button
-                className={
-                  isRecording
-                    ? "text-custom1 text-lg sm:text-xl ml-2 animate-pulse"
-                    : "text-lg sm:text-xl ml-2"
-                }
-                onClick={toggleRecording}
               >
-                <BsMicFill />
-              </button>
-              <button
-                className="bg-custom1 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 flex items-center justify-center"
-                onClick={(e) => {
-                  e.preventDefault();
-                  sendMessage();
-                }}
-              >
-                <IoIosSend className="text-xl sm:text-2xl" />
-              </button>
+                <input
+                  type="file"
+                  id="fileUpload"
+                  className="hidden"
+                  multiple
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    setSelectedFiles(files ? Array.from(files) : []);
+                  }}
+                />
+
+                <label htmlFor="fileUpload" className="cursor-pointer">
+                  <IoCloudUploadSharp className="text-custom1 text-3xl sm:text-4xl mr-2 sm:mr-3" />
+                </label>
+
+                <input
+                  type="text"
+                  className="flex-1 bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
+                  placeholder="Send a message..."
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                />
+                <button
+                  className={
+                    isRecording
+                      ? "text-custom1 text-lg sm:text-xl ml-2 animate-pulse"
+                      : "text-lg sm:text-xl ml-2"
+                  }
+                  onClick={toggleRecording}
+                >
+                  <BsMicFill />
+                </button>
+                <button
+                  className="bg-custom1 text-white px-3 sm:px-4 py-2 rounded-2xl ml-2 flex items-center justify-center"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    sendMessage();
+                  }}
+                >
+                  <IoIosSend className="text-xl sm:text-2xl" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
