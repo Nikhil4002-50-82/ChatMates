@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        custom: [`Caveat`, `cursive`],
+        custom: [`Chewy`, `system-ui`],
       },
       colors: {
         custom1: "#9B1C31",

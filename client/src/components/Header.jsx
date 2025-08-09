@@ -47,12 +47,12 @@ const Header = () => {
         <span>
           <GiChatBubble className="text-white text-3xl sm:text-4xl md:text-5xl" />
         </span>
-        <h1 className="text-white font-semibold text-2xl sm:text-3xl md:text-4xl lg:text-5xl ml-1 sm:ml-2 ">
+        <h1 className="text-white font-thin text-2xl sm:text-3xl md:text-4xl lg:text-5xl ml-1 sm:ml-2 ">
           ChatMates
         </h1>
       </div>
       <button
-        className="text-custom1 bg-white text-xl sm:text-2xl md:text-3xl px-3 sm:px-4 md:px-5 py-1 rounded-lg font-semibold  transition-colors duration-200"
+        className="text-custom1 bg-white text-xl sm:text-2xl md:text-3xl px-3 sm:px-4 md:px-5 py-1 rounded-lg font-light  transition-colors duration-200"
         onClick={(e) => {
           e.preventDefault();
           logout();

@@ -265,7 +265,7 @@ const Home = () => {
 
   return (
     <div
-      className="bg-[#f0f2f5] h-[100dvh] "
+      className="bg-[#f0f2f5] h-[100dvh] font-thin"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
@@ -287,15 +287,15 @@ const Home = () => {
         >
           <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 sm:px-6 py-4">
             <div className=" flex items-center">
-              <FaUserTie className="text-4xl mr-2" />
-              <h2 className="text-xl sm:text-2xl">{userData.name}</h2>
+              <FaUserTie className="text-3xl mr-2" />
+              <h2 className="text-lg sm:text-2xl">{userData.name}</h2>
             </div>
             <div><MdAdminPanelSettings className="text-4xl"/></div>
           </div>
           <div className="border-b border-[#e0e0e0] px-3 py-2">
             <input
               type="text"
-              className="w-full bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-xl sm:text-2xl rounded-lg"
+              className="w-full bg-[#f0f2f5] border border-[#ddd] focus:outline-none px-3 py-2 text-lg sm:text-2xl rounded-lg"
               placeholder="Search for people..."
               value={searchQuery}
               onChange={handleSearch}
@@ -310,7 +310,7 @@ const Home = () => {
                       key={user.userid}
                       className="flex items-center px-3 sm:px-5 py-3 cursor-pointer hover:bg-[#f5f5f5]"
                     >
-                      <FaUserTie className="text-4xl mr-3 sm:mr-4" />
+                      <FaUserTie className="text-3xl mr-3" />
                       <div className="flex-1">
                         <h3 className="text-base sm:text-lg">{user.name}</h3>
                         <p className="text-xs sm:text-sm text-[#666]">
@@ -318,10 +318,10 @@ const Home = () => {
                         </p>
                       </div>
                       <button
-                        className="bg-custom1 w-24 h-10 font-semibold text-white px-1 sm:px-2 py-1 sm:py-2 rounded-lg text-md sm:text-lg flex items-center justify-center"
+                        className="bg-custom1 w-20 h-9  text-white px-1 sm:px-2 py-1 sm:py-2 rounded-lg text-md sm:text-lg flex items-center justify-center"
                         onClick={() => handleStartChat(user.userid)}
                       >
-                        <p>Start Chat</p>
+                        <span className="text-sm" >Start Chat</span>
                       </button>
                     </div>
                   ))
@@ -354,9 +354,9 @@ const Home = () => {
               >
                 <RiMenuSearchFill className="text-4xl mr-1" />
               </button>
-              <FaUserTie className="text-4xl mr-2" />
-              <h2 className="text-xl sm:text-2xl">
-                {selectedUser ? selectedUser.name : "Select a chat"}
+              <FaUserTie className="text-3xl mr-2" />
+              <h2 className="text-lg sm:text-2xl">
+                {selectedUser ? selectedUser.name : "Settings"}
               </h2>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">

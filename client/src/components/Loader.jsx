@@ -16,7 +16,7 @@ const Loader = () => {
           <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
-      <h1 className="mt-6 text-white text-3xl md:text-5xl font-semibold animate-pulse">
+      <h1 className="mt-6 text-white text-3xl md:text-5xl font-thin animate-pulse">
         ChatMates
       </h1>
       <p className="mt-2 text-white text-xl opacity-75">

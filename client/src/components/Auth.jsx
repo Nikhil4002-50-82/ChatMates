@@ -198,7 +198,7 @@ const Auth = () => {
           />
           <div className="flex items-center justify-around">
             <button
-              className="bg-custom1 rounded-2xl text-white h-12 w-32 text-lg md:text-xl font-semibold mr-2"
+              className="bg-custom1 rounded-2xl text-white h-12 w-32 text-lg md:text-xl font-thin mr-2"
               onClick={(e) => {
                 e.preventDefault();
                 sendOtp();
@@ -217,7 +217,7 @@ const Auth = () => {
               required
             />
             <button
-              className="bg-custom1 rounded-2xl text-white h-12 w-32 text-lg md:text-xl font-semibold ml-2"
+              className="bg-custom1 rounded-2xl text-white h-12 w-32 text-lg md:text-xl font-thin ml-2"
               onClick={(e) => {
                 e.preventDefault();
                 verifyOtp();
@@ -238,7 +238,7 @@ const Auth = () => {
               />
               <button
                 type="submit"
-                className="bg-custom1 text-white py-3 rounded-lg transition duration-200 font-semibold text-xl sm:text-2xl"
+                className="bg-custom1 text-white py-3 rounded-lg transition duration-200 font-thin text-xl sm:text-2xl"
                 disabled={loading}
               >
                 {isLogin ? "Login" : "Sign Up"}
@@ -248,7 +248,7 @@ const Auth = () => {
         </form>
         <div className="text-center text-lg text-gray-500 mt-6 flex items-center justify-center">
           <p className="mr-2">Welcome to </p>
-          <span className="font-semibold text-custom1">ChatMates</span>
+          <span className="font-thin text-custom1">ChatMates</span>
           <GiChatBubble className="ml-1 text-custom1" />
         </div>
       </div>

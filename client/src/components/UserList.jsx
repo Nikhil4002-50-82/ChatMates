@@ -12,9 +12,9 @@ const UserList = ({ users, selectedUser, onSelect }) => {
             selectedUser?.userid === user.userid ? " md:bg-gray-100" : ""
           }`}
         >
-          <FaUserTie className="text-4xl mr-2" />
+          <FaUserTie className="text-3xl mr-2" />
           <div className="flex items-center">
-            <h3 className="text-lg font-semibold">{user.name}</h3>
+            <h3 className="text-lg font-thin">{user.name}</h3>
           </div>
         </div>
       ))}
