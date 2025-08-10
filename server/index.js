@@ -11,6 +11,8 @@ import { Server } from "socket.io";
 import supabase from "./utils/supabase.js";
 import nodemailer from "nodemailer";
 import multer from "multer";
+import path from "path";
+import validator from "validator";
 
 dotenv.config();
 
@@ -49,18 +51,20 @@ io.on("connection", (socket) => {
     const { senderid, chatid, message, mediatype, mediaurl } = messageData;
     const { data, error } = await supabase
       .from("messages")
-      .insert([{
-        chatid,
-        senderid,
-        message,
-        mediatype: mediatype || null,
-        mediaurl: mediaurl || null  
-      }])
+      .insert([
+        {
+          chatid,
+          senderid,
+          message,
+          mediatype: mediatype || null,
+          mediaurl: mediaurl || null,
+        },
+      ])
       .select();
     if (!error && data?.length > 0) {
       io.emit("receive_message", {
         ...data[0],
-        created_at: new Date().toISOString(), 
+        created_at: new Date().toISOString(),
       });
     } else if (error) {
       console.error("Supabase insert error:", error);
@@ -73,7 +77,6 @@ io.on("connection", (socket) => {
     console.log("User disconnected:", socket.id);
   });
 });
-
 
 app.use(
   cors({
@@ -151,6 +154,7 @@ app.post("/login", async (req, res) => {
         email: user.email,
         name: profile.name,
         phoneno: profile.phoneno,
+        profilephoto: profile.profilephoto,
       },
       process.env.JWT_ACCESS_TOKEN,
       { expiresIn: "15m" }
@@ -207,6 +211,7 @@ app.get("/refreshToken", async (req, res) => {
         email: email,
         name: user.name,
         phoneno: user.phoneno,
+        profilephoto: user.profilephoto,
       },
       process.env.JWT_ACCESS_TOKEN,
       { expiresIn: "15m" }
@@ -254,6 +259,7 @@ app.get("/profile", authenticateAccessToken, async (req, res) => {
       name: user.name,
       phoneno: user.phoneno,
       userid: userid,
+      profilephoto: user.profilephoto,
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to retrieve profile" });
@@ -271,7 +277,7 @@ app.get("/chattedUsers/:userid", authenticateAccessToken, async (req, res) => {
   if (chatIds.length === 0) return res.json([]);
   const { data: users, error: userError } = await supabase
     .from("chatmembers")
-    .select("chatid, userid, users(name)")
+    .select("chatid, userid, users(name,profilephoto)")
     .in("chatid", chatIds)
     .neq("userid", userid);
   if (userError) return res.status(500).json({ error: userError.message });
@@ -279,7 +285,12 @@ app.get("/chattedUsers/:userid", authenticateAccessToken, async (req, res) => {
     new Map(
       users.map((i) => [
         i.userid,
-        { userid: i.userid, name: i.users.name, chatid: i.chatid },
+        {
+          userid: i.userid,
+          name: i.users.name,
+          profilephoto: i.users.profilephoto,
+          chatid: i.chatid,
+        },
       ])
     ).values()
   );
@@ -290,9 +301,9 @@ app.get("/searchUsers", authenticateAccessToken, async (req, res) => {
   const { q, userid } = req.query;
   const { data, error } = await supabase
     .from("users")
-    .select("userid, name")
+    .select("userid, name,profilephoto")
     .ilike("name", `%${q}%`)
-    .neq("userid", userid) 
+    .neq("userid", userid)
     .limit(10);
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
@@ -333,7 +344,7 @@ app.post("/startChat", authenticateAccessToken, async (req, res) => {
     if (memberInsertError) throw memberInsertError;
     const { data: otherUser, error: userFetchError } = await supabase
       .from("users")
-      .select("name")
+      .select("name,profilephoto")
       .eq("userid", user2)
       .single();
     if (userFetchError) throw userFetchError;
@@ -363,7 +374,9 @@ app.get("/messages/:chatid", authenticateAccessToken, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("messages")
-      .select("messageid, chatid, senderid, message, timestamp,mediatype,mediaurl")
+      .select(
+        "messageid, chatid, senderid, message, timestamp,mediatype,mediaurl"
+      )
       .eq("chatid", chatid)
       .order("timestamp", { ascending: true });
     if (error) {
@@ -376,8 +389,8 @@ app.get("/messages/:chatid", authenticateAccessToken, async (req, res) => {
       senderid: msg.senderid,
       message: msg.message,
       timestamp: msg.timestamp,
-      mediatype:msg.mediatype,
-      mediaurl:msg.mediaurl
+      mediatype: msg.mediatype,
+      mediaurl: msg.mediaurl,
     }));
     res.status(200).json(formattedMessages);
   } catch (err) {
@@ -429,7 +442,7 @@ const transporter = nodemailer.createTransport({
 app.post("/sendOtp", async (req, res) => {
   const { email } = req.body;
   const otp = generateOTP();
-  const expiry = Date.now() + 5 * 60 * 1000; 
+  const expiry = Date.now() + 5 * 60 * 1000;
   otpStore.set(email, { otp, expiry });
   try {
     await transporter.sendMail({
@@ -518,6 +531,143 @@ app.post(
     }
   }
 );
+
+app.post(
+  "/uploadProfilePhoto",
+  authenticateAccessToken,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const file = req.file;
+      const userid = req.user.userid; // ✅ Only from token
+
+      if (!file) {
+        return res.status(400).json({ error: "File is required" });
+      }
+
+      if (!file.mimetype.startsWith("image/")) {
+        return res
+          .status(400)
+          .json({ error: "Invalid file type. Only images are allowed" });
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ error: "File size exceeds 5MB" });
+      }
+
+      const extension = path.extname(file.originalname);
+      const fileName = `profile/${userid}-${Date.now()}${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("profile")
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        return res.status(500).json({ error: uploadError.message });
+      }
+
+      const { data: publicUrlData, error: publicUrlError } = supabase.storage
+        .from("profile")
+        .getPublicUrl(fileName);
+
+      if (publicUrlError) {
+        return res.status(500).json({ error: publicUrlError.message });
+      }
+
+      res.status(200).json({ url: publicUrlData.publicUrl });
+    } catch (err) {
+      console.error("Error uploading profile photo:", err);
+      res
+        .status(500)
+        .json({ error: "Server error during profile photo upload" });
+    }
+  }
+);
+
+// app.put("/updateUser", authenticateAccessToken, async (req, res) => {
+//   try {
+//     const { userid, name, phoneno, profilephoto } = req.body;
+//     if (!userid || userid !== req.user.userid) {
+//       return res.status(403).json({ error: "Unauthorized user ID" });
+//     }
+//     if (name && name.trim() === "") {
+//       return res.status(400).json({ error: "Name cannot be empty" });
+//     }
+//     if (profilephoto && !validator.isURL(profilephoto)) {
+//       return res.status(400).json({ error: "Invalid profile photo URL" });
+//     }
+//     const updates = {};
+//     if (name) updates.name = name;
+//     if (phoneno) updates.phoneno = phoneno;
+//     if (profilephoto) updates.profilephoto = profilephoto;
+//     if (Object.keys(updates).length === 0) {
+//       return res.status(400).json({ error: "No fields to update" });
+//     }
+//     const { data, error } = await supabase
+//       .from("users")
+//       .update(updates)
+//       .eq("userid", userid)
+//       .select()
+//       .single();
+//     if (error) {
+//       console.error("Error updating user:", error.message);
+//       return res.status(500).json({ error: "Failed to update user" });
+//     }
+//     if (!data) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+//     res.status(200).json({ message: "User updated successfully" });
+//   } catch (err) {
+//     console.error("Error updating user:", err.message);
+//     res.status(500).json({ error: "Server error while updating user" });
+//   }
+// });
+
+app.put("/updateUser", authenticateAccessToken, async (req, res) => {
+  try {
+    const userid = req.user.userid; // ✅ Only from token
+    const { name, phoneno, profilephoto } = req.body;
+
+    if (name && name.trim() === "") {
+      return res.status(400).json({ error: "Name cannot be empty" });
+    }
+    if (profilephoto && !validator.isURL(profilephoto)) {
+      return res.status(400).json({ error: "Invalid profile photo URL" });
+    }
+
+    const updates = {};
+    if (name) updates.name = name;
+    if (phoneno) updates.phoneno = phoneno;
+    if (profilephoto) updates.profilephoto = profilephoto;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .update(updates)
+      .eq("userid", userid)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating user:", error.message);
+      return res.status(500).json({ error: "Failed to update user" });
+    }
+    if (!data) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ message: "User updated successfully" });
+  } catch (err) {
+    console.error("Error updating user:", err.message);
+    res.status(500).json({ error: "Server error while updating user" });
+  }
+});
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}.`);
