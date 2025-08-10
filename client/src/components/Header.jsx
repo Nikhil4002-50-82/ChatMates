@@ -47,7 +47,7 @@ const Header = () => {
         <span>
           <GiChatBubble className="text-white text-3xl sm:text-4xl md:text-5xl" />
         </span>
-        <h1 className="text-white font-thin text-2xl sm:text-3xl md:text-4xl lg:text-5xl ml-1 sm:ml-2 ">
+        <h1 className="text-white font-thin text-4xl lg:text-5xl ml-1 sm:ml-2 ">
           ChatMates
         </h1>
       </div>
