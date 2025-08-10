@@ -52,25 +52,22 @@ export default function Settings({ onClick }) {
   };
 
   return (
-    <div className="bg-[#f0f2f5] h-[calc(100dvh-80px)] w-full my-3 scrollbar-hide flex flex-col p-4 sm:p-6 overflow-y-auto transition-all duration-300">
-      {/* Menu Icon (Mobile Only) */}
-      <div className="flex items-center justify-start mb-4 sm:hidden">
+    <div className="bg-[#f0f2f5] h-[calc(100dvh-80px)] w-full scrollbar-hide flex flex-col overflow-y-auto transition-all duration-300">
+      <div className="flex items-center justify-start py-3 px-2 mb-4 sm:hidden bg-white ">
         <button
-          className="text-2xl text-custom1"
+          className="text-2xl black"
           onClick={onClick}
           aria-label="Toggle sidebar"
         >
           <RiMenuSearchFill className="text-4xl" />
         </button>
       </div>
-      <div className="flex items-center justify-center flex-1">
+      <div className="flex items-center justify-center flex-1 px-4 py-1 sm:px-4 sm:py-2">
         <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg w-full max-w-4xl p-6 sm:p-8 transform transition-all hover:shadow-xl">
-          {/* Header */}
           <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-6 text-center flex items-center justify-center gap-2">
-            <FaUserTie className="text-custom1" /> Profile Settings
+            <FaUserTie className="text-custom1 text-4xl" /> Profile Settings
           </h2>
 
-          {/* Profile Photo */}
           <div className="flex justify-center mb-6">
             <label htmlFor="avatarUpload" className="relative cursor-pointer group">
               <img
@@ -91,9 +88,7 @@ export default function Settings({ onClick }) {
             </label>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit}>
-            {/* Name */}
             <div className="mb-5">
               <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2">
                 Name
@@ -110,8 +105,6 @@ export default function Settings({ onClick }) {
                 />
               </div>
             </div>
-
-            {/* Email */}
             <div className="mb-5">
               <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2">
                 Email
@@ -125,8 +118,6 @@ export default function Settings({ onClick }) {
                 className="w-full bg-[#f0f2f5] border border-[#e0e0e0] rounded-lg px-4 py-3 text-sm sm:text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-custom1 transition-all duration-200"
               />
             </div>
-
-            {/* Save Button */}
             <button
               type="submit"
               className="w-full bg-custom1 text-white py-3 rounded-lg text-base sm:text-lg font-medium hover:bg-opacity-90 hover:scale-105 transition-all duration-200 shadow-md"
