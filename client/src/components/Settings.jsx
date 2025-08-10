@@ -90,23 +90,23 @@ export default function Settings({ onClick }) {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-5">
-              <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2">
+              <label className="block text-lg font-medium text-gray-700 mb-2">
                 Name
               </label>
               <div className="relative flex items-center border border-[#e0e0e0] rounded-lg bg-[#f0f2f5] px-4 py-3 transition-all duration-200 focus-within:ring-2 focus-within:ring-custom1">
-                <FaUserTie className="text-custom1 text-lg mr-3" />
+                <FaUserTie className="text-custom1 text-3xl mr-3" />
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="Enter your name"
-                  className="flex-1 bg-transparent focus:outline-none text-sm sm:text-base text-gray-800 placeholder-gray-400"
+                  className="flex-1 bg-transparent focus:outline-none text-lg text-gray-800 placeholder-gray-400"
                 />
               </div>
             </div>
             <div className="mb-5">
-              <label className="block text-sm sm:text-base font-medium text-gray-700 mb-2">
+              <label className="block text-lg font-medium text-gray-700 mb-2">
                 Email
               </label>
               <input
@@ -115,12 +115,12 @@ export default function Settings({ onClick }) {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Enter your email"
-                className="w-full bg-[#f0f2f5] border border-[#e0e0e0] rounded-lg px-4 py-3 text-sm sm:text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-custom1 transition-all duration-200"
+                className="w-full bg-[#f0f2f5] border border-[#e0e0e0] rounded-lg px-4 py-3 text-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-custom1 transition-all duration-200"
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-custom1 text-white py-3 rounded-lg text-base sm:text-lg font-medium hover:bg-opacity-90 hover:scale-105 transition-all duration-200 shadow-md"
+              className="w-full bg-custom1 text-white py-3 rounded-lg text-lg font-medium hover:bg-opacity-90 hover:scale-105 transition-all duration-200 shadow-md"
             >
               Save Changes
             </button>
