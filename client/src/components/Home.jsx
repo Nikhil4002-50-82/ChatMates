@@ -437,7 +437,7 @@ const Home = () => {
                     }}
                   />
                 ) : (
-                  <FaUserTie className="text-3xl mr-2" />
+                  <FaUserTie className="text-5xl mr-2" />
                 )}
                 <h2 className="text-2xl">
                   {selectedUser ? selectedUser.name : "Start Chat"}
