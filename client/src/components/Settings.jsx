@@ -105,7 +105,7 @@ export default function Settings({ onClick }) {
 
   return (
     <div className="bg-[#f0f2f5] h-[calc(100dvh-80px)] w-full scrollbar-hide flex flex-col overflow-y-auto transition-all duration-300">
-      <div className="flex items-center fixed w-full justify-start py-3 px-4 mb-4 sm:hidden bg-white">
+      <div className="flex items-center justify-start py-3 px-4 mb-4 sm:hidden bg-white">
         <button
           className="text-2xl black"
           onClick={onClick}
