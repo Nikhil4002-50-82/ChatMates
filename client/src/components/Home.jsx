@@ -319,21 +319,6 @@ const Home = () => {
             maxWidth: "600px",
           }}
         >
-          {/* <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 py-1 sm:px-4 sm:py-2">
-            <div className="flex items-center">
-              <FaUserTie className="text-3xl mr-2" />
-              <h2 className="text-2xl">{userData.name}</h2>
-            </div>
-            <div>
-              <MdAdminPanelSettings
-                className="text-5xl"
-                onClick={() => {
-                  setSetting((prev) => !prev);
-                  toggleSidebar()
-                }}
-              />
-            </div>
-          </div> */}
           <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 py-1 sm:px-4 sm:py-2">
             <div className="flex items-center">
               {userData.profilephoto ? (
@@ -347,7 +332,7 @@ const Home = () => {
                   }}
                 />
               ) : (
-                <FaUserTie className="text-3xl mr-2" />
+                <FaUserTie className="text-5xl mr-2" />
               )}
               <h2 className="text-2xl">{userData.name}</h2>
             </div>
