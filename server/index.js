@@ -551,10 +551,6 @@ app.post(
           .json({ error: "Invalid file type. Only images are allowed" });
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        return res.status(400).json({ error: "File size exceeds 5MB" });
-      }
-
       const extension = path.extname(file.originalname);
       const fileName = `profile/${userid}-${Date.now()}${extension}`;
 
