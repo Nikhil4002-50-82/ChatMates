@@ -57,7 +57,7 @@ const Home = () => {
     if (!loadingChat && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
-  }, [loadingChat,setting]);
+  }, [loadingChat, setting]);
 
   const handleSelectChat = async (user) => {
     setLoadingChat(true);
@@ -201,7 +201,8 @@ const Home = () => {
         isSidebarOpen &&
         sidebarRef.current &&
         !sidebarRef.current.contains(event.target) &&
-        (!menuButtonRef.current || !menuButtonRef.current.contains(event.target))
+        (!menuButtonRef.current ||
+          !menuButtonRef.current.contains(event.target))
       ) {
         setIsSidebarOpen(false);
       }
@@ -308,7 +309,9 @@ const Home = () => {
         <div
           ref={sidebarRef}
           className={`bg-white border-r border-[#e0e0e0] fixed sm:static left-0 h-full sm:h-auto transition-transform duration-300 ease-in-out z-50 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
+            isSidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full sm:translate-x-0"
           }`}
           style={{
             width: `${sidebarWidth}px`,
@@ -316,7 +319,7 @@ const Home = () => {
             maxWidth: "600px",
           }}
         >
-          <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 py-1 sm:px-4 sm:py-2">
+          {/* <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 py-1 sm:px-4 sm:py-2">
             <div className="flex items-center">
               <FaUserTie className="text-3xl mr-2" />
               <h2 className="text-2xl">{userData.name}</h2>
@@ -330,7 +333,35 @@ const Home = () => {
                 }}
               />
             </div>
+          </div> */}
+          <div className="flex items-center justify-between bg-white border-b border-[#e0e0e0] px-4 py-1 sm:px-4 sm:py-2">
+            <div className="flex items-center">
+              {userData.profilephoto ? (
+                <img
+                  src={userData.profilephoto}
+                  alt={userData.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm mr-2"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = ""; // trigger fallback
+                  }}
+                />
+              ) : (
+                <FaUserTie className="text-3xl mr-2" />
+              )}
+              <h2 className="text-2xl">{userData.name}</h2>
+            </div>
+            <div>
+              <MdAdminPanelSettings
+                className="text-5xl"
+                onClick={() => {
+                  setSetting((prev) => !prev);
+                  toggleSidebar();
+                }}
+              />
+            </div>
           </div>
+
           <div className="border-b border-[#e0e0e0] px-3 py-2">
             <input
               type="text"
@@ -386,7 +417,7 @@ const Home = () => {
           <Settings onClick={toggleSidebar} />
         ) : (
           <div className="flex flex-col flex-1">
-            <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-8 py-3 sm:py-4 flex items-center justify-between">
+            <div className="bg-white border-b border-[#e0e0e0] px-4 sm:px-8 py-1 sm:py-2 flex items-center justify-between">
               <div className="flex items-center">
                 <button
                   ref={menuButtonRef}
@@ -395,7 +426,19 @@ const Home = () => {
                 >
                   <RiMenuSearchFill className="text-4xl mr-1" />
                 </button>
-                <FaUserTie className="text-3xl mr-2" />
+                {selectedUser && selectedUser.profilephoto ? (
+                  <img
+                    src={selectedUser.profilephoto}
+                    alt={selectedUser.name}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm mr-2"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = "none"; // hide broken image
+                    }}
+                  />
+                ) : (
+                  <FaUserTie className="text-3xl mr-2" />
+                )}
                 <h2 className="text-2xl">
                   {selectedUser ? selectedUser.name : "Start Chat"}
                 </h2>
@@ -450,9 +493,7 @@ const Home = () => {
                   ))}
                 </div>
               )}
-              <div
-                className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center sm:relative fixed bottom-0 left-0 right-0 z-50"
-              >
+              <div className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center sm:relative fixed bottom-0 left-0 right-0 z-50">
                 <input
                   type="file"
                   id="fileUpload"
@@ -502,4 +543,3 @@ const Home = () => {
 };
 
 export default Home;
-
