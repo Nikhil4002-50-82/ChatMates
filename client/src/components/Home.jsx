@@ -9,7 +9,6 @@ import Header from "./Header";
 import Auth from "./Auth";
 import Loader from "./Loader";
 import Spinner from "./Spinner";
-import Settings from "./Settings";
 
 import { FaUserTie } from "react-icons/fa";
 import { IoCall, IoCloudUploadSharp } from "react-icons/io5";
@@ -19,6 +18,7 @@ import { RiMenuSearchFill } from "react-icons/ri";
 import { MdAdminPanelSettings } from "react-icons/md";
 
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
+import Settings from "./Settings";
 
 const Home = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -47,217 +47,6 @@ const Home = () => {
   const [setting, setSetting] = useState(false);
   const [viewMode, setViewMode] = useState("list");
 
-  // --- WebRTC related state & refs ---
-  const pcRef = useRef(null); // RTCPeerConnection
-  const localStreamRef = useRef(null);
-  const remoteStreamRef = useRef(null);
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-  const [inCall, setInCall] = useState(false);
-  const [callFrom, setCallFrom] = useState(null); // incoming caller id
-
-  const RTC_CONFIG = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" }, // free google STUN
-      // add TURN server here if you self-host or pay for one
-    ],
-  };
-
-  const createPeerConnection = (remoteUserId) => {
-    const pc = new RTCPeerConnection(RTC_CONFIG);
-    pcRef.current = pc;
-
-    // forward any ICE candidates to the remote peer
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("ice-candidate", {
-          to: remoteUserId,
-          candidate: event.candidate,
-        });
-      }
-    };
-
-    // when remote stream arrives, attach to remote video
-    pc.ontrack = (event) => {
-      if (!remoteStreamRef.current) {
-        remoteStreamRef.current = new MediaStream();
-        if (remoteVideoRef.current)
-          remoteVideoRef.current.srcObject = remoteStreamRef.current;
-      }
-      event.streams &&
-        event.streams[0] &&
-        (remoteVideoRef.current.srcObject = event.streams[0]);
-    };
-
-    return pc;
-  };
-
-  // start a call (caller)
-  const startCall = async () => {
-    if (!selectedUser || !userData?.userid) {
-      toast.error("Select a user to call");
-      return;
-    }
-    try {
-      // get local media
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      localStreamRef.current = localStream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-
-      // create peer connection
-      const pc = createPeerConnection(selectedUser.userid);
-
-      // add local tracks
-      localStream
-        .getTracks()
-        .forEach((track) => pc.addTrack(track, localStream));
-
-      // create offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      // send offer to server
-      socket.emit("call-user", {
-        to: selectedUser.userid,
-        from: userData.userid,
-        offer: offer,
-      });
-      setInCall(true);
-    } catch (err) {
-      console.error("startCall error:", err);
-      toast.error("Unable to start call. Check camera/mic permissions.");
-    }
-  };
-
-  // Accept incoming call (callee)
-  const acceptCall = async (fromUserId, offer) => {
-    try {
-      // get local media
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      localStreamRef.current = localStream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-
-      // create peer connection
-      const pc = createPeerConnection(fromUserId);
-
-      // add local tracks
-      localStream
-        .getTracks()
-        .forEach((track) => pc.addTrack(track, localStream));
-
-      // set remote description with offer
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-
-      // create answer
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      // send answer back
-      socket.emit("make-answer", {
-        to: fromUserId,
-        from: userData.userid,
-        answer: answer,
-      });
-
-      setInCall(true);
-    } catch (err) {
-      console.error("acceptCall error:", err);
-      toast.error("Failed to accept call.");
-    }
-  };
-
-  // End call / cleanup
-  const endCall = () => {
-    try {
-      if (pcRef.current) {
-        pcRef.current.getSenders().forEach((s) => {
-          try {
-            s.track && s.track.stop();
-          } catch (e) {}
-        });
-        pcRef.current.close();
-        pcRef.current = null;
-      }
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((t) => t.stop());
-        localStreamRef.current = null;
-      }
-      if (remoteStreamRef.current) {
-        try {
-          remoteStreamRef.current.getTracks().forEach((t) => t.stop());
-        } catch (e) {}
-        remoteStreamRef.current = null;
-      }
-      if (localVideoRef.current) localVideoRef.current.srcObject = null;
-      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
-    } finally {
-      setInCall(false);
-      setCallFrom(null);
-    }
-  };
-
-  // --- Socket listeners for incoming signaling events ---
-  useEffect(() => {
-    // incoming call (offer)
-    socket.on("incoming-call", async ({ from, offer }) => {
-      console.log("Incoming call from", from);
-      setCallFrom(from);
-
-      // show a simple confirm prompt — replace with nicer modal UI if desired
-      const accept = window.confirm(Incoming call from ${from}. Accept?);
-      if (accept) {
-        await acceptCall(from, offer);
-      } else {
-        // optional: notify caller they were rejected (not implemented here)
-        setCallFrom(null);
-      }
-    });
-
-    // caller receives answer
-    socket.on("call-answered", async ({ from, answer }) => {
-      console.log("Received answer from", from);
-      if (pcRef.current) {
-        try {
-          await pcRef.current.setRemoteDescription(
-            new RTCSessionDescription(answer)
-          );
-        } catch (err) {
-          console.error("setRemoteDescription error:", err);
-        }
-      }
-    });
-
-    // incoming ICE candidate
-    socket.on("ice-candidate", async ({ candidate }) => {
-      if (!candidate) return;
-      try {
-        if (pcRef.current) {
-          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-        }
-      } catch (err) {
-        console.error("addIceCandidate error:", err);
-      }
-    });
-
-    // user offline notification (optional)
-    socket.on("user-offline", ({ to }) => {
-      toast.error("User appears to be offline or not connected.");
-    });
-
-    return () => {
-      socket.off("incoming-call");
-      socket.off("call-answered");
-      socket.off("ice-candidate");
-      socket.off("user-offline");
-    };
-  }, [selectedUser, userData]);
-
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -275,7 +64,7 @@ const Home = () => {
     setSelectedUser(user);
     setActiveChatId(user.chatid);
     try {
-      const res = await axios.get(${API_BASE_URL}/messages/${user.chatid}, {
+      const res = await axios.get(`${API_BASE_URL}/messages/${user.chatid}`, {
         withCredentials: true,
       });
       setMessages(res.data);
@@ -313,7 +102,7 @@ const Home = () => {
     setViewMode("search");
     try {
       const response = await axios.get(
-        ${API_BASE_URL}/searchUsers?q=${value}&userid=${userData.userid},
+       `${API_BASE_URL}/searchUsers?q=${value}&userid=${userData.userid}`,
         { withCredentials: true }
       );
       const allResults = response.data;
@@ -335,7 +124,7 @@ const Home = () => {
     }
     try {
       const response = await axios.post(
-        ${API_BASE_URL}/startChat,
+        `${API_BASE_URL}/startChat`,
         { user1: userData.userid, user2: otherUserId },
         { withCredentials: true }
       );
@@ -346,7 +135,7 @@ const Home = () => {
         (u) => u.userid === otherUserId
       );
       if (!alreadyPresent) {
-        const res = await axios.get(${API_BASE_URL}/getUser/${otherUserId}, {
+        const res = await axios.get(`${API_BASE_URL}/getUser/${otherUserId}`, {
           withCredentials: true,
         });
         const newUser = { ...res.data, chatid };
@@ -365,9 +154,10 @@ const Home = () => {
       toggleSidebar();
       setActiveChatId(chatid);
       setSelectedUser(userToSelect);
+
       setLoadingChat(true);
       try {
-        const res = await axios.get(${API_BASE_URL}/messages/${chatid}, {
+        const res = await axios.get(`${API_BASE_URL}/messages/${chatid}`, {
           withCredentials: true,
         });
         setMessages(res.data);
@@ -429,7 +219,7 @@ const Home = () => {
     const fetchChatUsers = async () => {
       try {
         const response = await axios.get(
-          ${API_BASE_URL}/chattedUsers/${userData.userid},
+            `${API_BASE_URL}/chattedUsers/${userData.userid}`,
           { withCredentials: true }
         );
         const data = response.data;
@@ -455,10 +245,10 @@ const Home = () => {
           formData.append("file", file);
           formData.append("chatid", activeChatId);
           formData.append("mediatype", file.type);
-          await axios.post(${API_BASE_URL}/uploadFile, formData, {
+          await axios.post(`${API_BASE_URL}/uploadFile`, formData, {
             withCredentials: true,
           });
-          toast.success(Uploaded ${file.name}!);
+          toast.success(`Uploaded ${file.name}!`);
         }
       } catch (error) {
         toast.error("One or more file uploads failed");
@@ -507,34 +297,6 @@ const Home = () => {
     return <Loader />;
   }
 
-  // const startCall = () => {
-  //   if (!selectedUser) return;
-  //   socket.emit("call-user", {
-  //     to: selectedUser.userid,
-  //     from: userData.userid,
-  //   });
-  // };
-
-  // useEffect(() => {
-  //   socket.on("call-made", async (data) => {
-  //     // Handle incoming call here — show a modal to accept/reject
-  //   });
-
-  //   socket.on("answer-made", async (data) => {
-  //     // Handle answer to your call
-  //   });
-
-  //   socket.on("ice-candidate", async (candidate) => {
-  //     // Add ICE candidate to peer connection
-  //   });
-
-  //   return () => {
-  //     socket.off("call-made");
-  //     socket.off("answer-made");
-  //     socket.off("ice-candidate");
-  //   };
-  // }, [socket]);
-
   return (
     <div
       className="bg-[#f0f2f5] h-[100dvh] font-thin"
@@ -543,6 +305,7 @@ const Home = () => {
     >
       <Header />
       <div className="w-full h-[calc(100dvh-80px)] flex flex-col sm:flex-row">
+        {/* Sidebar */}
         <div
           ref={sidebarRef}
           className={`bg-white border-r border-[#e0e0e0] fixed sm:static left-0 h-full sm:h-auto transition-transform duration-300 ease-in-out z-50 ${
@@ -551,7 +314,7 @@ const Home = () => {
               : "-translate-x-full sm:translate-x-0"
           }`}
           style={{
-            width: ${sidebarWidth}px,
+            width: `${sidebarWidth}px`,
             minWidth: "300px",
             maxWidth: "600px",
           }}
@@ -565,7 +328,7 @@ const Home = () => {
                   className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm mr-2"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "";
+                    e.target.src = ""; // trigger fallback
                   }}
                 />
               ) : (
@@ -630,6 +393,7 @@ const Home = () => {
             </div>
           </div>
         </div>
+        {/* Resize Handle */}
         <div
           className="hidden sm:block w-1 bg-[#e0e0e0] cursor-col-resize hover:bg-custom1 transition-colors"
           onMouseDown={handleMouseDown}
@@ -654,7 +418,7 @@ const Home = () => {
                     className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm mr-2"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.style.display = "none";
+                      e.target.style.display = "none"; // hide broken image
                     }}
                   />
                 ) : (
@@ -664,37 +428,18 @@ const Home = () => {
                   {selectedUser ? selectedUser.name : "Start Chat"}
                 </h2>
               </div>
-              {/* <div className="flex items-center gap-2 sm:gap-4">
-                <IoCall
-                  className="text-3xl cursor-pointer"
-                  onClick={startCall}
-                />
-              </div> */}
               <div className="flex items-center gap-2 sm:gap-4">
-                <IoCall
-                  className="text-3xl cursor-pointer"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    startCall();
-                  }}
-                  title="Start video call"
-                />
-                {inCall && (
-                  <button
-                    className="ml-3 px-2 py-1 rounded bg-red-500 text-white"
-                    onClick={() => endCall()}
-                  >
-                    End Call
-                  </button>
-                )}
+                <IoCall className="text-3xl cursor-pointer" />
               </div>
             </div>
+            {/* Chat Content Area */}
             <div className="flex h-[84dvh] md:h-[77dvh] flex-col bg-[#f0f2f5]">
+              {/* Scrollable Messages */}
               {loadingChat ? (
                 <Spinner />
               ) : (
                 <div className="overflow-y-auto min-h-[93%] md:min-h-[82%] scrollbar-hide px-3 sm:px-5 py-3 sm:py-5">
-                  {messages.map((msg) => (
+                  {messages.map((msg, index) => (
                     <ChatMessage
                       key={msg.messageid}
                       message={msg.message}
@@ -708,6 +453,7 @@ const Home = () => {
                   <div className="h-16 sm:hidden" />
                 </div>
               )}
+              {/* Fixed Input Bar */}
               {selectedFiles.length > 0 && (
                 <div className="text-gray-500 ml-2 flex flex-wrap gap-2">
                   {selectedFiles.map((file, index) => (
@@ -724,7 +470,7 @@ const Home = () => {
                         }}
                         className="ml-2 text-custom1 font-bold text-2xl"
                         type="button"
-                        aria-label={Remove file ${file.name}}
+                        aria-label={`Remove file ${file.name}`}
                       >
                         ×
                       </button>
@@ -732,30 +478,6 @@ const Home = () => {
                   ))}
                 </div>
               )}
-              {inCall && (
-                <div className="flex gap-4 p-4 bg-white border-b border-[#e0e0e0]">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-600">You</p>
-                    <video
-                      ref={localVideoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full max-h-60 rounded bg-black"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-600">Remote</p>
-                    <video
-                      ref={remoteVideoRef}
-                      autoPlay
-                      playsInline
-                      className="w-full max-h-60 rounded bg-black"
-                    />
-                  </div>
-                </div>
-              )}
-
               <div className="bg-white border-t border-[#e0e0e0] p-3 sm:p-5 flex items-center sm:relative fixed bottom-0 left-0 right-0 z-50">
                 <input
                   type="file"

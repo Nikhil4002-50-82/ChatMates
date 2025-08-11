@@ -45,111 +45,8 @@ const io = new Server(server, {
   },
 });
 
-// io.on("connection", (socket) => {
-//   console.log("User connected:", socket.id);
-//   socket.on("call-user", ({ to, from }) => {
-//     io.to(to).emit("call-made", { from });
-//   });
-
-//   socket.on("make-answer", ({ to, answer }) => {
-//     io.to(to).emit("answer-made", { answer });
-//   });
-
-//   socket.on("ice-candidate", ({ to, candidate }) => {
-//     io.to(to).emit("ice-candidate", candidate);
-//   });
-
-//   socket.on("send_message", async (messageData) => {
-//     const { senderid, chatid, message, mediatype, mediaurl } = messageData;
-//     const { data, error } = await supabase
-//       .from("messages")
-//       .insert([
-//         {
-//           chatid,
-//           senderid,
-//           message,
-//           mediatype: mediatype || null,
-//           mediaurl: mediaurl || null,
-//         },
-//       ])
-//       .select();
-//     if (!error && data?.length > 0) {
-//       io.emit("receive_message", {
-//         ...data[0],
-//         created_at: new Date().toISOString(),
-//       });
-//     } else if (error) {
-//       console.error("Supabase insert error:", error);
-//     } else {
-//       console.warn("No data returned from insert.");
-//     }
-//   });
-
-//   socket.on("disconnect", () => {
-//     console.log("User disconnected:", socket.id);
-//   });
-// });
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-
-  // Map of userid -> socket.id stored server-side (in-memory)
-  // When a client connects it should emit "user-connected" with their userid
-  // We'll store it here and remove on disconnect.
-  socket.on("user-connected", (userid) => {
-    try {
-      socket.userid = userid;
-      // create users map on io if not present
-      if (!io.users) io.users = new Map();
-      io.users.set(userid, socket.id);
-      console.log(`Mapped userid ${userid} -> socket ${socket.id}`);
-    } catch (err) {
-      console.error("user-connected handler error:", err);
-    }
-  });
-
-  // Caller sends offer to server with { to, from, offer }
-  socket.on("call-user", ({ to, from, offer }) => {
-    try {
-      if (!io.users) return;
-      const targetSocketId = io.users.get(to);
-      if (targetSocketId) {
-        io.to(targetSocketId).emit("incoming-call", { from, offer });
-      } else {
-        // You can optionally notify caller that user is offline
-        socket.emit("user-offline", { to });
-      }
-    } catch (err) {
-      console.error("call-user error:", err);
-    }
-  });
-
-  // Callee sends answer with { to, from, answer }
-  socket.on("make-answer", ({ to, from, answer }) => {
-    try {
-      if (!io.users) return;
-      const targetSocketId = io.users.get(to);
-      if (targetSocketId) {
-        io.to(targetSocketId).emit("call-answered", { from, answer });
-      }
-    } catch (err) {
-      console.error("make-answer error:", err);
-    }
-  });
-
-  // Both peers send ICE candidates using { to, candidate }
-  socket.on("ice-candidate", ({ to, candidate }) => {
-    try {
-      if (!io.users) return;
-      const targetSocketId = io.users.get(to);
-      if (targetSocketId) {
-        io.to(targetSocketId).emit("ice-candidate", { candidate });
-      }
-    } catch (err) {
-      console.error("ice-candidate error:", err);
-    }
-  });
-
-  // your existing send_message handler (unchanged)
   socket.on("send_message", async (messageData) => {
     const { senderid, chatid, message, mediatype, mediaurl } = messageData;
     const { data, error } = await supabase
@@ -178,11 +75,6 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
-    // remove mapping
-    if (io.users && socket.userid) {
-      io.users.delete(socket.userid);
-      console.log(`Removed mapping for userid ${socket.userid}`);
-    }
   });
 });
 
