@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -12,7 +12,7 @@ import Loader from "./Loader";
 const Header = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-  const { loggedIn, setLoggedIn } = useContext(LoggedInContext);
+  const { setLoggedIn } = useContext(LoggedInContext);
   const { setUserData } = useContext(userDataContext);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);

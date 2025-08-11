@@ -1,9 +1,6 @@
-import React from "react";
-
 const ChatMessage = ({ message, isSender, time, type, url }) => {
   const renderMedia = () => {
     if (!type || !url) return null;
-
     if (type.startsWith("image/")) {
       return (
         <img
@@ -15,7 +12,6 @@ const ChatMessage = ({ message, isSender, time, type, url }) => {
         />
       );
     }
-
     if (type.startsWith("video/")) {
       return (
         <video
@@ -27,7 +23,6 @@ const ChatMessage = ({ message, isSender, time, type, url }) => {
         </video>
       );
     }
-
     if (type.startsWith("audio/")) {
       return (
         <audio controls className="w-full mb-2">
@@ -36,8 +31,6 @@ const ChatMessage = ({ message, isSender, time, type, url }) => {
         </audio>
       );
     }
-
-    // For documents or unsupported types
     return (
       <a
         href={url}

@@ -1,4 +1,3 @@
-import React from "react";
 import { FaUserTie } from "react-icons/fa";
 
 const UserList = ({ users, selectedUser, onSelect }) => {
@@ -19,7 +18,7 @@ const UserList = ({ users, selectedUser, onSelect }) => {
               className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = ""; // fallback to trigger icon
+                e.target.src = "";
               }}
             />
           ) : (

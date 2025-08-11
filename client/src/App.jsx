@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from "axios";
 import { Bounce, ToastContainer } from "react-toastify";
@@ -10,10 +10,9 @@ import Settings from "./components/Settings";
 
 import { LoggedInContext, userDataContext } from "./context/LoginContext";
 
-
 const App = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-  const [loggedIn, setLoggedIn] = useState(null); // Initialize as null to indicate "unknown" state
+  const [loggedIn, setLoggedIn] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,9 +63,8 @@ const App = () => {
         setLoading(false);
       }
     };
-
     checkSession();
-  }, []);
+  });
 
   if (loading) {
     return <Loader />;

@@ -45,8 +45,111 @@ const io = new Server(server, {
   },
 });
 
+// io.on("connection", (socket) => {
+//   console.log("User connected:", socket.id);
+//   socket.on("call-user", ({ to, from }) => {
+//     io.to(to).emit("call-made", { from });
+//   });
+
+//   socket.on("make-answer", ({ to, answer }) => {
+//     io.to(to).emit("answer-made", { answer });
+//   });
+
+//   socket.on("ice-candidate", ({ to, candidate }) => {
+//     io.to(to).emit("ice-candidate", candidate);
+//   });
+
+//   socket.on("send_message", async (messageData) => {
+//     const { senderid, chatid, message, mediatype, mediaurl } = messageData;
+//     const { data, error } = await supabase
+//       .from("messages")
+//       .insert([
+//         {
+//           chatid,
+//           senderid,
+//           message,
+//           mediatype: mediatype || null,
+//           mediaurl: mediaurl || null,
+//         },
+//       ])
+//       .select();
+//     if (!error && data?.length > 0) {
+//       io.emit("receive_message", {
+//         ...data[0],
+//         created_at: new Date().toISOString(),
+//       });
+//     } else if (error) {
+//       console.error("Supabase insert error:", error);
+//     } else {
+//       console.warn("No data returned from insert.");
+//     }
+//   });
+
+//   socket.on("disconnect", () => {
+//     console.log("User disconnected:", socket.id);
+//   });
+// });
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
+
+  // Map of userid -> socket.id stored server-side (in-memory)
+  // When a client connects it should emit "user-connected" with their userid
+  // We'll store it here and remove on disconnect.
+  socket.on("user-connected", (userid) => {
+    try {
+      socket.userid = userid;
+      // create users map on io if not present
+      if (!io.users) io.users = new Map();
+      io.users.set(userid, socket.id);
+      console.log(`Mapped userid ${userid} -> socket ${socket.id}`);
+    } catch (err) {
+      console.error("user-connected handler error:", err);
+    }
+  });
+
+  // Caller sends offer to server with { to, from, offer }
+  socket.on("call-user", ({ to, from, offer }) => {
+    try {
+      if (!io.users) return;
+      const targetSocketId = io.users.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("incoming-call", { from, offer });
+      } else {
+        // You can optionally notify caller that user is offline
+        socket.emit("user-offline", { to });
+      }
+    } catch (err) {
+      console.error("call-user error:", err);
+    }
+  });
+
+  // Callee sends answer with { to, from, answer }
+  socket.on("make-answer", ({ to, from, answer }) => {
+    try {
+      if (!io.users) return;
+      const targetSocketId = io.users.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("call-answered", { from, answer });
+      }
+    } catch (err) {
+      console.error("make-answer error:", err);
+    }
+  });
+
+  // Both peers send ICE candidates using { to, candidate }
+  socket.on("ice-candidate", ({ to, candidate }) => {
+    try {
+      if (!io.users) return;
+      const targetSocketId = io.users.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("ice-candidate", { candidate });
+      }
+    } catch (err) {
+      console.error("ice-candidate error:", err);
+    }
+  });
+
+  // your existing send_message handler (unchanged)
   socket.on("send_message", async (messageData) => {
     const { senderid, chatid, message, mediatype, mediaurl } = messageData;
     const { data, error } = await supabase
@@ -75,6 +178,11 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
+    // remove mapping
+    if (io.users && socket.userid) {
+      io.users.delete(socket.userid);
+      console.log(`Removed mapping for userid ${socket.userid}`);
+    }
   });
 });
 
@@ -539,40 +647,32 @@ app.post(
   async (req, res) => {
     try {
       const file = req.file;
-      const userid = req.user.userid; // ✅ Only from token
-
+      const userid = req.user.userid;
       if (!file) {
         return res.status(400).json({ error: "File is required" });
       }
-
       if (!file.mimetype.startsWith("image/")) {
         return res
           .status(400)
           .json({ error: "Invalid file type. Only images are allowed" });
       }
-
       const extension = path.extname(file.originalname);
       const fileName = `profile/${userid}-${Date.now()}${extension}`;
-
       const { error: uploadError } = await supabase.storage
         .from("profile")
         .upload(fileName, file.buffer, {
           contentType: file.mimetype,
           upsert: true,
         });
-
       if (uploadError) {
         return res.status(500).json({ error: uploadError.message });
       }
-
       const { data: publicUrlData, error: publicUrlError } = supabase.storage
         .from("profile")
         .getPublicUrl(fileName);
-
       if (publicUrlError) {
         return res.status(500).json({ error: publicUrlError.message });
       }
-
       res.status(200).json({ url: publicUrlData.publicUrl });
     } catch (err) {
       console.error("Error uploading profile photo:", err);
@@ -583,73 +683,29 @@ app.post(
   }
 );
 
-// app.put("/updateUser", authenticateAccessToken, async (req, res) => {
-//   try {
-//     const { userid, name, phoneno, profilephoto } = req.body;
-//     if (!userid || userid !== req.user.userid) {
-//       return res.status(403).json({ error: "Unauthorized user ID" });
-//     }
-//     if (name && name.trim() === "") {
-//       return res.status(400).json({ error: "Name cannot be empty" });
-//     }
-//     if (profilephoto && !validator.isURL(profilephoto)) {
-//       return res.status(400).json({ error: "Invalid profile photo URL" });
-//     }
-//     const updates = {};
-//     if (name) updates.name = name;
-//     if (phoneno) updates.phoneno = phoneno;
-//     if (profilephoto) updates.profilephoto = profilephoto;
-//     if (Object.keys(updates).length === 0) {
-//       return res.status(400).json({ error: "No fields to update" });
-//     }
-//     const { data, error } = await supabase
-//       .from("users")
-//       .update(updates)
-//       .eq("userid", userid)
-//       .select()
-//       .single();
-//     if (error) {
-//       console.error("Error updating user:", error.message);
-//       return res.status(500).json({ error: "Failed to update user" });
-//     }
-//     if (!data) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-//     res.status(200).json({ message: "User updated successfully" });
-//   } catch (err) {
-//     console.error("Error updating user:", err.message);
-//     res.status(500).json({ error: "Server error while updating user" });
-//   }
-// });
-
 app.put("/updateUser", authenticateAccessToken, async (req, res) => {
   try {
     const userid = req.user.userid; // ✅ Only from token
     const { name, phoneno, profilephoto } = req.body;
-
     if (name && name.trim() === "") {
       return res.status(400).json({ error: "Name cannot be empty" });
     }
     if (profilephoto && !validator.isURL(profilephoto)) {
       return res.status(400).json({ error: "Invalid profile photo URL" });
     }
-
     const updates = {};
     if (name) updates.name = name;
     if (phoneno) updates.phoneno = phoneno;
     if (profilephoto) updates.profilephoto = profilephoto;
-
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: "No fields to update" });
     }
-
     const { data, error } = await supabase
       .from("users")
       .update(updates)
       .eq("userid", userid)
       .select()
       .single();
-
     if (error) {
       console.error("Error updating user:", error.message);
       return res.status(500).json({ error: "Failed to update user" });
@@ -657,7 +713,6 @@ app.put("/updateUser", authenticateAccessToken, async (req, res) => {
     if (!data) {
       return res.status(404).json({ error: "User not found" });
     }
-
     res.status(200).json({ message: "User updated successfully" });
   } catch (err) {
     console.error("Error updating user:", err.message);

@@ -1,8 +1,7 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-import OtpInput from "react-otp-input";
 
 import { GiChatBubble } from "react-icons/gi";
 import { LoggedInContext, userDataContext } from "../context/LoginContext";
@@ -20,7 +19,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { setLoggedIn } = useContext(LoggedInContext);
   const { setUserData } = useContext(userDataContext);
-  const [isOTPPhase, setIsOTPPhase] = useState(false);
+  const [isOTPPhase] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpVerified, setOtpVerified] = useState(false);
 
@@ -38,8 +37,6 @@ const Auth = () => {
         toast(response?.data?.message, {
           type: "success",
         });
-
-        // Fetch user profile to ensure userData is populated
         const profileResponse = await axios.get(`${API_BASE_URL}/profile`, {
           withCredentials: true,
         });
