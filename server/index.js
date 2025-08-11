@@ -80,10 +80,6 @@ const io = new Server(server, {
 const userSocketMap = {};
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-  socket.on("register-user", (userId) => {
-    userSocketMap[userId] = socket.id;
-    console.log(`User registered: ${userId} -> ${socket.id}`);
-  });
   socket.on("send_message", async (messageData) => {
     const { senderid, chatid, message, mediatype, mediaurl } = messageData;
     const { data, error } = await supabase
@@ -109,40 +105,38 @@ io.on("connection", (socket) => {
       console.warn("No data returned from insert.");
     }
   });
-  socket.on("call-user", ({ fromUserId, toUserId, offer }) => {
-    const targetSocketId = userSocketMap[toUserId];
+  socket.on("register-user", (userId) => {
+    userSocketMap[userId] = socket.id;
+    console.log(`User ${userId} registered with socket ${socket.id}`);
+  });
+
+  socket.on("call-user", ({ targetUserId, offer }) => {
+    const targetSocketId = userSocketMap[targetUserId];
     if (targetSocketId) {
       io.to(targetSocketId).emit("incoming-call", {
-        fromUserId,
+        from: socket.id,
         offer,
       });
     }
   });
-  socket.on("answer-call", ({ fromUserId, toUserId, answer }) => {
-    const targetSocketId = userSocketMap[toUserId];
+
+  socket.on("answer-call", ({ targetUserId, answer }) => {
+    const targetSocketId = userSocketMap[targetUserId];
     if (targetSocketId) {
       io.to(targetSocketId).emit("call-answered", {
-        fromUserId,
+        from: socket.id,
         answer,
       });
     }
   });
-  socket.on("ice-candidate", ({ fromUserId, toUserId, candidate }) => {
-    const targetSocketId = userSocketMap[toUserId];
+
+  socket.on("ice-candidate", ({ targetUserId, candidate }) => {
+    const targetSocketId = userSocketMap[targetUserId];
     if (targetSocketId) {
       io.to(targetSocketId).emit("ice-candidate", {
-        fromUserId,
+        from: socket.id,
         candidate,
       });
-    }
-  });
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-    for (let userId in userSocketMap) {
-      if (userSocketMap[userId] === socket.id) {
-        delete userSocketMap[userId];
-        break;
-      }
     }
   });
 });
