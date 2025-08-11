@@ -47,7 +47,7 @@ const Home = () => {
   const [loadingChat, setLoadingChat] = useState(false);
   const [setting, setSetting] = useState(false);
   const [viewMode, setViewMode] = useState("list");
-  const [showCall, setShowCall] = useState(false);
+  // const [showCall, setShowCall] = useState(false);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -433,14 +433,13 @@ const Home = () => {
               <div className="flex items-center gap-2 sm:gap-4">
                 <IoCall
                   className="text-3xl cursor-pointer"
-                  onClick={() => setShowCall(true)}
                 />
-                {showCall && selectedUser && (
+                {/* {showCall && selectedUser && (
                   <Call
                     currentUserId={userData.userid}
                     otherUserId={selectedUser.userid}
                   />
-                )}
+                )} */}
               </div>
             </div>
             {/* Chat Content Area */}

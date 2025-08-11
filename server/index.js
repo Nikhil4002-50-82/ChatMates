@@ -45,39 +45,6 @@ const io = new Server(server, {
   },
 });
 
-// io.on("connection", (socket) => {
-//   console.log("User connected:", socket.id);
-//   socket.on("send_message", async (messageData) => {
-//     const { senderid, chatid, message, mediatype, mediaurl } = messageData;
-//     const { data, error } = await supabase
-//       .from("messages")
-//       .insert([
-//         {
-//           chatid,
-//           senderid,
-//           message,
-//           mediatype: mediatype || null,
-//           mediaurl: mediaurl || null,
-//         },
-//       ])
-//       .select();
-//     if (!error && data?.length > 0) {
-//       io.emit("receive_message", {
-//         ...data[0],
-//         created_at: new Date().toISOString(),
-//       });
-//     } else if (error) {
-//       console.error("Supabase insert error:", error);
-//     } else {
-//       console.warn("No data returned from insert.");
-//     }
-//   });
-
-//   socket.on("disconnect", () => {
-//     console.log("User disconnected:", socket.id);
-//   });
-// });
-const userSocketMap = {};
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
   socket.on("send_message", async (messageData) => {
@@ -105,41 +72,75 @@ io.on("connection", (socket) => {
       console.warn("No data returned from insert.");
     }
   });
-  socket.on("register-user", (userId) => {
-    userSocketMap[userId] = socket.id;
-    console.log(`User ${userId} registered with socket ${socket.id}`);
-  });
 
-  socket.on("call-user", ({ targetUserId, offer }) => {
-    const targetSocketId = userSocketMap[targetUserId];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("incoming-call", {
-        from: socket.id,
-        offer,
-      });
-    }
-  });
-
-  socket.on("answer-call", ({ targetUserId, answer }) => {
-    const targetSocketId = userSocketMap[targetUserId];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("call-answered", {
-        from: socket.id,
-        answer,
-      });
-    }
-  });
-
-  socket.on("ice-candidate", ({ targetUserId, candidate }) => {
-    const targetSocketId = userSocketMap[targetUserId];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("ice-candidate", {
-        from: socket.id,
-        candidate,
-      });
-    }
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
   });
 });
+
+
+// const userSocketMap = {};
+// io.on("connection", (socket) => {
+//   console.log("User connected:", socket.id);
+//   socket.on("send_message", async (messageData) => {
+//     const { senderid, chatid, message, mediatype, mediaurl } = messageData;
+//     const { data, error } = await supabase
+//       .from("messages")
+//       .insert([
+//         {
+//           chatid,
+//           senderid,
+//           message,
+//           mediatype: mediatype || null,
+//           mediaurl: mediaurl || null,
+//         },
+//       ])
+//       .select();
+//     if (!error && data?.length > 0) {
+//       io.emit("receive_message", {
+//         ...data[0],
+//         created_at: new Date().toISOString(),
+//       });
+//     } else if (error) {
+//       console.error("Supabase insert error:", error);
+//     } else {
+//       console.warn("No data returned from insert.");
+//     }
+//   });
+//   socket.on("register-user", (userId) => {
+//     userSocketMap[userId] = socket.id;
+//     console.log(`User ${userId} registered with socket ${socket.id}`);
+//   });
+
+//   socket.on("call-user", ({ targetUserId, offer }) => {
+//     const targetSocketId = userSocketMap[targetUserId];
+//     if (targetSocketId) {
+//       io.to(targetSocketId).emit("incoming-call", {
+//         from: socket.id,
+//         offer,
+//       });
+//     }
+//   });
+
+//   socket.on("answer-call", ({ targetUserId, answer }) => {
+//     const targetSocketId = userSocketMap[targetUserId];
+//     if (targetSocketId) {
+//       io.to(targetSocketId).emit("call-answered", {
+//         from: socket.id,
+//         answer,
+//       });
+//     }
+//   });
+//   socket.on("ice-candidate", ({ targetUserId, candidate }) => {
+//     const targetSocketId = userSocketMap[targetUserId];
+//     if (targetSocketId) {
+//       io.to(targetSocketId).emit("ice-candidate", {
+//         from: socket.id,
+//         candidate,
+//       });
+//     }
+//   });
+// });
 
 app.use(
   cors({
