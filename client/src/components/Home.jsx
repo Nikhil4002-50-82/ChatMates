@@ -9,6 +9,7 @@ import Header from "./Header";
 import Auth from "./Auth";
 import Loader from "./Loader";
 import Spinner from "./Spinner";
+import Call from "./Call";
 
 import { FaUserTie } from "react-icons/fa";
 import { IoCall, IoCloudUploadSharp } from "react-icons/io5";
@@ -46,6 +47,7 @@ const Home = () => {
   const [loadingChat, setLoadingChat] = useState(false);
   const [setting, setSetting] = useState(false);
   const [viewMode, setViewMode] = useState("list");
+  const [showCall, setShowCall] = useState(false);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -102,7 +104,7 @@ const Home = () => {
     setViewMode("search");
     try {
       const response = await axios.get(
-       `${API_BASE_URL}/searchUsers?q=${value}&userid=${userData.userid}`,
+        `${API_BASE_URL}/searchUsers?q=${value}&userid=${userData.userid}`,
         { withCredentials: true }
       );
       const allResults = response.data;
@@ -219,7 +221,7 @@ const Home = () => {
     const fetchChatUsers = async () => {
       try {
         const response = await axios.get(
-            `${API_BASE_URL}/chattedUsers/${userData.userid}`,
+          `${API_BASE_URL}/chattedUsers/${userData.userid}`,
           { withCredentials: true }
         );
         const data = response.data;
@@ -429,7 +431,16 @@ const Home = () => {
                 </h2>
               </div>
               <div className="flex items-center gap-2 sm:gap-4">
-                <IoCall className="text-3xl cursor-pointer" />
+                <IoCall
+                  className="text-3xl cursor-pointer"
+                  onClick={() => setShowCall(true)}
+                />
+                {showCall && selectedUser && (
+                  <Call
+                    currentUserId={userData.userid}
+                    otherUserId={selectedUser.userid}
+                  />
+                )}
               </div>
             </div>
             {/* Chat Content Area */}
